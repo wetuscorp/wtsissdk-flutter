@@ -11,6 +11,7 @@ jobs:
     environment: release
     steps:
       - uses: actions/checkout@v5
+      - uses: dart-lang/setup-dart@v1
       - uses: subosito/flutter-action@v2
         with: { flutter-version: '3.44.6', cache: true }
       - name: Verify tag and package
@@ -21,7 +22,31 @@ jobs:
           flutter pub get
           flutter analyze
           flutter test
-          dart pub publish --dry-run
-      - run: dart pub publish --force
-      - run: gh release create "$GITHUB_REF_NAME" --generate-notes --verify-tag
+          flutter pub publish --dry-run
+      - name: Check pub.dev registry
+        id: pub_registry
+        env:
+          PACKAGE_VERSION: ${{ github.ref_name }}
+        run: |
+          status="$(curl --silent --show-error --output /tmp/wts-sdk-package.json --write-out '%{http_code}' https://pub.dev/api/packages/wts_sdk)"
+          case "$status" in
+            200)
+              if jq --exit-status --arg version "$PACKAGE_VERSION" '.versions | any(.version == $version)' /tmp/wts-sdk-package.json >/dev/null; then
+                echo "published=true" >> "$GITHUB_OUTPUT"
+              else
+                echo "published=false" >> "$GITHUB_OUTPUT"
+              fi
+              ;;
+            404)
+              echo "published=false" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unexpected pub.dev response: HTTP $status" >&2
+              exit 1
+              ;;
+          esac
+      - if: steps.pub_registry.outputs.published != 'true'
+        run: flutter pub publish --force
+      - name: Create GitHub release
+        run: gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --generate-notes --verify-tag
         env: { GH_TOKEN: "${{ github.token }}" }
