@@ -1,5 +1,6 @@
 name: CI
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches: [main]
@@ -21,8 +22,14 @@ jobs:
       - run: dart format --output=none --set-exit-if-changed lib test pigeons
       - run: flutter analyze
       - run: flutter test
-      - run: dart run pigeon --input pigeons/messages.dart
-      - run: git diff --exit-code
+      - name: Verify generated platform bindings
+        run: |
+          dart run pigeon --input pigeons/messages.dart
+          dart format lib/src/messages.g.dart
+          git diff --exit-code -- \
+            lib/src/messages.g.dart \
+            android/src/main/kotlin/co/wetus/sdk/flutter/WtsMessages.g.kt \
+            ios/wts_sdk/Sources/wts_sdk/WtsMessages.g.swift
       - run: dart pub publish --dry-run
   android-example:
     runs-on: ubuntu-latest
