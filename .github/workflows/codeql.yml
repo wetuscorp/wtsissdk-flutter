@@ -1,0 +1,39 @@
+name: CodeQL
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '31 3 * * 1'
+permissions:
+  contents: read
+  security-events: write
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5
+        with: { repository: wetuscorp/wtsissdk-android, path: native-android }
+      - uses: actions/setup-java@v5
+        with: { distribution: temurin, java-version: '17' }
+      - uses: subosito/flutter-action@v2
+        with: { flutter-version: '3.44.6', cache: true }
+      - uses: github/codeql-action/init@v4
+        with: { languages: java-kotlin, build-mode: manual }
+      - run: cd native-android && ./gradlew :sdk:publishToMavenLocal
+      - run: cd example && flutter pub get && flutter build apk --debug
+      - uses: github/codeql-action/analyze@v4
+  ios:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/checkout@v5
+        with: { repository: wetuscorp/wtsissdk-swift, path: native-swift }
+      - uses: subosito/flutter-action@v2
+        with: { flutter-version: '3.44.6', cache: true }
+      - uses: github/codeql-action/init@v4
+        with: { languages: swift, build-mode: manual }
+      - run: cd example && flutter pub get && flutter build ios --simulator
+        env: { WTS_SDK_SWIFT_PATH: "${{ github.workspace }}/native-swift" }
+      - uses: github/codeql-action/analyze@v4

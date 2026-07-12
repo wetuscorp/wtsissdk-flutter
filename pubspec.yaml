@@ -1,0 +1,24 @@
+name: wts_sdk
+description: Official wts.is deep-link and attribution SDK for Flutter.
+version: 0.1.0-alpha.1
+homepage: https://wts.is
+repository: https://github.com/wetuscorp/wtsissdk-flutter
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+  flutter: ">=3.35.0"
+dependencies:
+  flutter:
+    sdk: flutter
+  meta: ">=1.16.0 <2.0.0"
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  pigeon: 26.3.4
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: co.wetus.sdk.flutter
+        pluginClass: WtsSdkPlugin
+      ios:
+        pluginClass: WtsSdkPlugin

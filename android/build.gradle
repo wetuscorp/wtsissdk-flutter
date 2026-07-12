@@ -1,0 +1,21 @@
+group 'co.wetus.sdk.flutter'
+version '0.1.0-alpha.1'
+
+buildscript {
+    repositories { google(); mavenCentral() }
+    dependencies { classpath 'com.android.tools.build:gradle:8.10.1'; classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.0' }
+}
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+android {
+    namespace 'co.wetus.sdk.flutter'
+    compileSdk 36
+    defaultConfig { minSdk 23 }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+kotlin { jvmToolchain(17) }
+repositories { google(); mavenLocal(); mavenCentral() }
+dependencies { implementation 'co.wetus:wts-sdk-android:0.1.0-alpha.1'; implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2' }

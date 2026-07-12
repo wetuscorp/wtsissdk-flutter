@@ -1,0 +1,9 @@
+.github/
+.wts-contracts.json
+contracts/
+pigeons/
+scripts/
+build/
+example/build/
+example/ios/Pods/
+example/ios/.symlinks/

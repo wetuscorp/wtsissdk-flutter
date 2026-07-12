@@ -1,0 +1,17 @@
+.DS_Store
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+coverage/
+**/Pods/
+example/ios/Podfile.lock
+**/.symlinks/
+**/Flutter/ephemeral/
+.idea/
+*.iml
+*.jks
+*.keystore
+.env*
+!.env.example
