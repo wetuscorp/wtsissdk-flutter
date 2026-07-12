@@ -30,7 +30,7 @@ flutter_ios_podfile_setup
 target 'Runner' do
   use_frameworks!
 
-  pod 'WtsSDK', :path => ENV['WTS_SDK_SWIFT_PATH'] if ENV['WTS_SDK_SWIFT_PATH']
+  pod 'WtsSDK', :path => ENV['WTS_SDK_SWIFT_POD_PATH'] if ENV['WTS_SDK_SWIFT_POD_PATH']
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
   target 'RunnerTests' do
