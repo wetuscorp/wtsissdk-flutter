@@ -48,5 +48,9 @@ jobs:
       - if: steps.pub_registry.outputs.published != 'true'
         run: flutter pub publish --force
       - name: Create GitHub release
-        run: gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --generate-notes --verify-tag
+        run: |
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 && exit 0
+          release_flags=()
+          [[ "$GITHUB_REF_NAME" == *-* ]] && release_flags+=(--prerelease)
+          gh release create "$GITHUB_REF_NAME" --generate-notes --verify-tag "${release_flags[@]}"
         env: { GH_TOKEN: "${{ github.token }}" }
