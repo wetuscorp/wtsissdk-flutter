@@ -36,6 +36,91 @@ public final class WtsSdkPlugin: NSObject, FlutterPlugin, WtsHostApi {
         Task { completion(.success(await WtsSDK.shared.getDeferredDeepLink()?.toData())) }
     }
 
+    func setProfileConsent(
+        granted: Bool,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        Task {
+            do {
+                try await WtsSDK.shared.setProfileConsent(granted ? .granted : .denied)
+                completion(.success(()))
+            } catch { completion(.failure(error)) }
+        }
+    }
+
+    func identify(
+        externalUserId: String,
+        attributes: [WtsParameterData],
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        Task {
+            do {
+                try await WtsSDK.shared.identify(
+                    externalUserId,
+                    attributes: Dictionary(
+                        uniqueKeysWithValues: attributes.map { ($0.key, $0.toUserValue()) }
+                    )
+                )
+                completion(.success(()))
+            } catch { completion(.failure(error)) }
+        }
+    }
+
+    func updateUser(
+        update: WtsUserUpdateData,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        Task {
+            do {
+                try await WtsSDK.shared.updateUser(
+                    WtsUserUpdate(
+                        set: Dictionary(
+                            uniqueKeysWithValues: update.set.map { ($0.key, $0.toUserValue()) }
+                        ),
+                        setOnce: Dictionary(
+                            uniqueKeysWithValues: update.setOnce.map {
+                                ($0.key, $0.toUserValue())
+                            }
+                        ),
+                        unset: update.unset,
+                        increment: Dictionary(
+                            uniqueKeysWithValues: update.increment.map { ($0.key, $0.value) }
+                        )
+                    )
+                )
+                completion(.success(()))
+            } catch { completion(.failure(error)) }
+        }
+    }
+
+    func setReportedAttribution(
+        attribution: WtsReportedAttributionData,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        Task {
+            do {
+                try await WtsSDK.shared.setReportedAttribution(
+                    WtsReportedAttribution(
+                        source: attribution.source,
+                        medium: attribution.medium,
+                        campaign: attribution.campaign,
+                        externalRef: attribution.externalRef
+                    )
+                )
+                completion(.success(()))
+            } catch { completion(.failure(error)) }
+        }
+    }
+
+    func resetIdentity(completion: @escaping (Result<Void, Error>) -> Void) {
+        Task {
+            do {
+                try await WtsSDK.shared.resetIdentity()
+                completion(.success(()))
+            } catch { completion(.failure(error)) }
+        }
+    }
+
     func track(
         eventKey: String,
         properties: [WtsParameterData],
@@ -89,6 +174,18 @@ private extension WtsParameterData {
         case .string: .string(stringValue ?? "")
         case .number: .number(numberValue ?? 0)
         case .boolean: .boolean(booleanValue ?? false)
+        case .date: .string(stringValue ?? "")
+        case .stringArray: .string(stringArrayValue?.first ?? "")
+        }
+    }
+
+    func toUserValue() -> WtsUserValue {
+        switch kind {
+        case .string: .string(stringValue ?? "")
+        case .number: .number(numberValue ?? 0)
+        case .boolean: .boolean(booleanValue ?? false)
+        case .date: .date(stringValue ?? "")
+        case .stringArray: .stringArray(stringArrayValue ?? [])
         }
     }
 }

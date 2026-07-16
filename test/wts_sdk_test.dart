@@ -85,6 +85,23 @@ class FakePlatform implements WtsPlatform {
   Future<WtsDeepLink?> getDeferredDeepLink() async => null;
 
   @override
+  Future<void> setProfileConsent(bool granted) async {}
+
+  @override
+  Future<void> identify(
+      String externalUserId, Map<String, Object> attributes) async {}
+
+  @override
+  Future<void> updateUser(WtsUserUpdate update) async {}
+
+  @override
+  Future<void> setReportedAttribution(
+      WtsReportedAttribution attribution) async {}
+
+  @override
+  Future<void> resetIdentity() async {}
+
+  @override
   Future<WtsDeepLink> handle(String url) async {
     if (handleError case final Object error) throw error;
     return const WtsDeepLink(

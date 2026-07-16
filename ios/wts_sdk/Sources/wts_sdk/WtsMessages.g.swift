@@ -178,6 +178,8 @@ enum WtsValueKind: Int {
   case string = 0
   case number = 1
   case boolean = 2
+  case date = 3
+  case stringArray = 4
 }
 
 /// Generated class from Pigeon that represents data sent in messages.
@@ -187,6 +189,7 @@ struct WtsParameterData: Hashable {
   var stringValue: String? = nil
   var numberValue: Double? = nil
   var booleanValue: Bool? = nil
+  var stringArrayValue: [String]? = nil
 
 
   // swift-format-ignore: AlwaysUseLowerCamelCase
@@ -196,13 +199,15 @@ struct WtsParameterData: Hashable {
     let stringValue: String? = nilOrValue(pigeonVar_list[2])
     let numberValue: Double? = nilOrValue(pigeonVar_list[3])
     let booleanValue: Bool? = nilOrValue(pigeonVar_list[4])
+    let stringArrayValue: [String]? = nilOrValue(pigeonVar_list[5])
 
     return WtsParameterData(
       key: key,
       kind: kind,
       stringValue: stringValue,
       numberValue: numberValue,
-      booleanValue: booleanValue
+      booleanValue: booleanValue,
+      stringArrayValue: stringArrayValue
     )
   }
   func toList() -> [Any?] {
@@ -212,13 +217,14 @@ struct WtsParameterData: Hashable {
       stringValue,
       numberValue,
       booleanValue,
+      stringArrayValue,
     ]
   }
   static func == (lhs: WtsParameterData, rhs: WtsParameterData) -> Bool {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return deepEqualsWtsMessages(lhs.key, rhs.key) && deepEqualsWtsMessages(lhs.kind, rhs.kind) && deepEqualsWtsMessages(lhs.stringValue, rhs.stringValue) && deepEqualsWtsMessages(lhs.numberValue, rhs.numberValue) && deepEqualsWtsMessages(lhs.booleanValue, rhs.booleanValue)
+    return deepEqualsWtsMessages(lhs.key, rhs.key) && deepEqualsWtsMessages(lhs.kind, rhs.kind) && deepEqualsWtsMessages(lhs.stringValue, rhs.stringValue) && deepEqualsWtsMessages(lhs.numberValue, rhs.numberValue) && deepEqualsWtsMessages(lhs.booleanValue, rhs.booleanValue) && deepEqualsWtsMessages(lhs.stringArrayValue, rhs.stringArrayValue)
   }
 
   func hash(into hasher: inout Hasher) {
@@ -228,6 +234,135 @@ struct WtsParameterData: Hashable {
     deepHashWtsMessages(value: stringValue, hasher: &hasher)
     deepHashWtsMessages(value: numberValue, hasher: &hasher)
     deepHashWtsMessages(value: booleanValue, hasher: &hasher)
+    deepHashWtsMessages(value: stringArrayValue, hasher: &hasher)
+  }
+}
+
+/// Generated class from Pigeon that represents data sent in messages.
+struct WtsUserUpdateData: Hashable {
+  var set: [WtsParameterData]
+  var setOnce: [WtsParameterData]
+  var unset: [String]
+  var increment: [WtsIncrementData]
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> WtsUserUpdateData? {
+    let set = pigeonVar_list[0] as! [WtsParameterData]
+    let setOnce = pigeonVar_list[1] as! [WtsParameterData]
+    let unset = pigeonVar_list[2] as! [String]
+    let increment = pigeonVar_list[3] as! [WtsIncrementData]
+
+    return WtsUserUpdateData(
+      set: set,
+      setOnce: setOnce,
+      unset: unset,
+      increment: increment
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      set,
+      setOnce,
+      unset,
+      increment,
+    ]
+  }
+  static func == (lhs: WtsUserUpdateData, rhs: WtsUserUpdateData) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return deepEqualsWtsMessages(lhs.set, rhs.set) && deepEqualsWtsMessages(lhs.setOnce, rhs.setOnce) && deepEqualsWtsMessages(lhs.unset, rhs.unset) && deepEqualsWtsMessages(lhs.increment, rhs.increment)
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("WtsUserUpdateData")
+    deepHashWtsMessages(value: set, hasher: &hasher)
+    deepHashWtsMessages(value: setOnce, hasher: &hasher)
+    deepHashWtsMessages(value: unset, hasher: &hasher)
+    deepHashWtsMessages(value: increment, hasher: &hasher)
+  }
+}
+
+/// Generated class from Pigeon that represents data sent in messages.
+struct WtsIncrementData: Hashable {
+  var key: String
+  var value: Double
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> WtsIncrementData? {
+    let key = pigeonVar_list[0] as! String
+    let value = pigeonVar_list[1] as! Double
+
+    return WtsIncrementData(
+      key: key,
+      value: value
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      key,
+      value,
+    ]
+  }
+  static func == (lhs: WtsIncrementData, rhs: WtsIncrementData) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return deepEqualsWtsMessages(lhs.key, rhs.key) && deepEqualsWtsMessages(lhs.value, rhs.value)
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("WtsIncrementData")
+    deepHashWtsMessages(value: key, hasher: &hasher)
+    deepHashWtsMessages(value: value, hasher: &hasher)
+  }
+}
+
+/// Generated class from Pigeon that represents data sent in messages.
+struct WtsReportedAttributionData: Hashable {
+  var source: String
+  var medium: String? = nil
+  var campaign: String? = nil
+  var externalRef: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> WtsReportedAttributionData? {
+    let source = pigeonVar_list[0] as! String
+    let medium: String? = nilOrValue(pigeonVar_list[1])
+    let campaign: String? = nilOrValue(pigeonVar_list[2])
+    let externalRef: String? = nilOrValue(pigeonVar_list[3])
+
+    return WtsReportedAttributionData(
+      source: source,
+      medium: medium,
+      campaign: campaign,
+      externalRef: externalRef
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      source,
+      medium,
+      campaign,
+      externalRef,
+    ]
+  }
+  static func == (lhs: WtsReportedAttributionData, rhs: WtsReportedAttributionData) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return deepEqualsWtsMessages(lhs.source, rhs.source) && deepEqualsWtsMessages(lhs.medium, rhs.medium) && deepEqualsWtsMessages(lhs.campaign, rhs.campaign) && deepEqualsWtsMessages(lhs.externalRef, rhs.externalRef)
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("WtsReportedAttributionData")
+    deepHashWtsMessages(value: source, hasher: &hasher)
+    deepHashWtsMessages(value: medium, hasher: &hasher)
+    deepHashWtsMessages(value: campaign, hasher: &hasher)
+    deepHashWtsMessages(value: externalRef, hasher: &hasher)
   }
 }
 
@@ -366,10 +501,16 @@ private class WtsMessagesPigeonCodecReader: FlutterStandardReader {
     case 130:
       return WtsParameterData.fromList(self.readValue() as! [Any?])
     case 131:
-      return WtsDeepLinkData.fromList(self.readValue() as! [Any?])
+      return WtsUserUpdateData.fromList(self.readValue() as! [Any?])
     case 132:
-      return WtsRevenueData.fromList(self.readValue() as! [Any?])
+      return WtsIncrementData.fromList(self.readValue() as! [Any?])
     case 133:
+      return WtsReportedAttributionData.fromList(self.readValue() as! [Any?])
+    case 134:
+      return WtsDeepLinkData.fromList(self.readValue() as! [Any?])
+    case 135:
+      return WtsRevenueData.fromList(self.readValue() as! [Any?])
+    case 136:
       return WtsConfigurationData.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
@@ -385,14 +526,23 @@ private class WtsMessagesPigeonCodecWriter: FlutterStandardWriter {
     } else if let value = value as? WtsParameterData {
       super.writeByte(130)
       super.writeValue(value.toList())
-    } else if let value = value as? WtsDeepLinkData {
+    } else if let value = value as? WtsUserUpdateData {
       super.writeByte(131)
       super.writeValue(value.toList())
-    } else if let value = value as? WtsRevenueData {
+    } else if let value = value as? WtsIncrementData {
       super.writeByte(132)
       super.writeValue(value.toList())
-    } else if let value = value as? WtsConfigurationData {
+    } else if let value = value as? WtsReportedAttributionData {
       super.writeByte(133)
+      super.writeValue(value.toList())
+    } else if let value = value as? WtsDeepLinkData {
+      super.writeByte(134)
+      super.writeValue(value.toList())
+    } else if let value = value as? WtsRevenueData {
+      super.writeByte(135)
+      super.writeValue(value.toList())
+    } else if let value = value as? WtsConfigurationData {
+      super.writeByte(136)
       super.writeValue(value.toList())
     } else {
       super.writeValue(value)
@@ -420,6 +570,11 @@ protocol WtsHostApi {
   func configure(configuration: WtsConfigurationData, completion: @escaping (Result<Void, Error>) -> Void)
   func handle(url: String, completion: @escaping (Result<WtsDeepLinkData, Error>) -> Void)
   func getDeferredDeepLink(completion: @escaping (Result<WtsDeepLinkData?, Error>) -> Void)
+  func setProfileConsent(granted: Bool, completion: @escaping (Result<Void, Error>) -> Void)
+  func identify(externalUserId: String, attributes: [WtsParameterData], completion: @escaping (Result<Void, Error>) -> Void)
+  func updateUser(update: WtsUserUpdateData, completion: @escaping (Result<Void, Error>) -> Void)
+  func setReportedAttribution(attribution: WtsReportedAttributionData, completion: @escaping (Result<Void, Error>) -> Void)
+  func resetIdentity(completion: @escaping (Result<Void, Error>) -> Void)
   func track(eventKey: String, properties: [WtsParameterData], revenue: WtsRevenueData?, linkId: String?, completion: @escaping (Result<Void, Error>) -> Void)
   func flush(completion: @escaping (Result<Void, Error>) -> Void)
 }
@@ -478,6 +633,90 @@ class WtsHostApiSetup {
       }
     } else {
       getDeferredDeepLinkChannel.setMessageHandler(nil)
+    }
+    let setProfileConsentChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.wts_sdk.WtsHostApi.setProfileConsent\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      setProfileConsentChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let grantedArg = args[0] as! Bool
+        api.setProfileConsent(granted: grantedArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      setProfileConsentChannel.setMessageHandler(nil)
+    }
+    let identifyChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.wts_sdk.WtsHostApi.identify\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      identifyChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let externalUserIdArg = args[0] as! String
+        let attributesArg = args[1] as! [WtsParameterData]
+        api.identify(externalUserId: externalUserIdArg, attributes: attributesArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      identifyChannel.setMessageHandler(nil)
+    }
+    let updateUserChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.wts_sdk.WtsHostApi.updateUser\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      updateUserChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let updateArg = args[0] as! WtsUserUpdateData
+        api.updateUser(update: updateArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      updateUserChannel.setMessageHandler(nil)
+    }
+    let setReportedAttributionChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.wts_sdk.WtsHostApi.setReportedAttribution\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      setReportedAttributionChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let attributionArg = args[0] as! WtsReportedAttributionData
+        api.setReportedAttribution(attribution: attributionArg) { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      setReportedAttributionChannel.setMessageHandler(nil)
+    }
+    let resetIdentityChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.wts_sdk.WtsHostApi.resetIdentity\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      resetIdentityChannel.setMessageHandler { _, reply in
+        api.resetIdentity { result in
+          switch result {
+          case .success:
+            reply(wrapResult(nil))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      resetIdentityChannel.setMessageHandler(nil)
     }
     let trackChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.wts_sdk.WtsHostApi.track\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {
