@@ -47,7 +47,7 @@ iOS returns `null` for deferred resolution. The SDK does not navigate automatica
 
 ## Consent-aware identity
 
-Profile identity is disabled until the host application provides its own consent decision. Anonymous link handling and analytics keep their existing behavior.
+Profile identity is disabled until the host application provides its own consent decision. Anonymous link handling and analytics keep their existing behavior. Setting consent to `false` queues a server-side profile binding reset through the native core.
 
 ```dart
 await WtsSdk.setProfileConsent(true);
@@ -84,6 +84,9 @@ await WtsSdk.setReportedAttribution(
 await WtsSdk.resetIdentity();
 ```
 
-Use an opaque, stable internal customer ID as `externalUserId`; send email, phone, and name as attributes. `resetIdentity()` preserves the native install UUID used by the underlying mobile SDK.
+Use an opaque, stable internal customer ID as `externalUserId`; it is case-sensitive and is not trimmed or normalized. Send email, phone, and name as attributes. `resetIdentity()` preserves the native install UUID used by the underlying mobile SDK.
 
-See the runnable `example`, [security policy](SECURITY.md), and [support policy](SUPPORT.md). Full documentation: https://wts.is/docs/sdk/flutter
+See the runnable `example`, [security policy](SECURITY.md), and [support policy](SUPPORT.md). Full documentation: https://wts.is/en/resources/docs/sdk-flutter
+
+Native failures are exposed as `WtsSdkException` with stable codes such as
+`TIMEOUT`, `NO_MATCH`, and `PROFILE_CONSENT_REQUIRED`.

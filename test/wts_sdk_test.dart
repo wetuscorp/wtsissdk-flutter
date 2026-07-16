@@ -48,13 +48,32 @@ void main() {
   });
 
   test('handle errors retain the original web fallback URL', () async {
-    platform.handleError = PlatformException(code: 'timeout');
+    platform.handleError = PlatformException(code: 'TIMEOUT');
     final Uri url = Uri.parse('https://demo.links.wts.is/summer');
 
     await expectLater(
       WtsSdk.handle(url),
-      throwsA(isA<WtsSdkException>().having(
-          (WtsSdkException error) => error.fallbackUrl, 'fallbackUrl', url)),
+      throwsA(isA<WtsSdkException>()
+          .having((WtsSdkException error) => error.code, 'code', 'TIMEOUT')
+          .having((WtsSdkException error) => error.fallbackUrl, 'fallbackUrl',
+              url)),
+    );
+  });
+
+  test('uses the native fallback URL when the operation has no web URL',
+      () async {
+    platform.configureError = PlatformException(
+      code: 'NETWORK_ERROR',
+      details: 'https://wts.is/fallback',
+    );
+
+    await expectLater(
+      WtsSdk.configure(appKey: 'public-app-key'),
+      throwsA(isA<WtsSdkException>()
+          .having(
+              (WtsSdkException error) => error.code, 'code', 'NETWORK_ERROR')
+          .having((WtsSdkException error) => error.fallbackUrl, 'fallbackUrl',
+              Uri.parse('https://wts.is/fallback'))),
     );
   });
 
@@ -74,9 +93,12 @@ class FakePlatform implements WtsPlatform {
   int trackCalls = 0;
   WtsRevenue? revenue;
   Object? handleError;
+  Object? configureError;
 
   @override
-  Future<void> configure(String appKey, String? apiBaseUrl) async {}
+  Future<void> configure(String appKey, String? apiBaseUrl) async {
+    if (configureError case final Object error) throw error;
+  }
 
   @override
   Future<void> flush() async {}

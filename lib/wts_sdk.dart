@@ -134,10 +134,13 @@ class WtsSdk {
     try {
       return await operation();
     } on PlatformException catch (error) {
+      final Uri? nativeFallback = error.details is String
+          ? Uri.tryParse(error.details as String)
+          : null;
       throw WtsSdkException(
         error.code,
         error.message ?? 'Native SDK error.',
-        fallbackUrl: fallbackUrl,
+        fallbackUrl: fallbackUrl ?? nativeFallback,
       );
     }
   }
@@ -191,7 +194,9 @@ class WtsSdk {
       ...update.unset,
       ...update.increment.keys,
     ];
-    if (keys.isEmpty || keys.length > 50 || keys.toSet().length != keys.length) {
+    if (keys.isEmpty ||
+        keys.length > 50 ||
+        keys.toSet().length != keys.length) {
       throw ArgumentError.value(
         update,
         'update',
@@ -261,8 +266,9 @@ class PigeonWtsPlatform implements WtsPlatform {
   Future<void> updateUser(WtsUserUpdate update) => _api.updateUser(
         WtsUserUpdateData(
           set: update.set.entries.map(_userParameter).toList(growable: false),
-          setOnce:
-              update.setOnce.entries.map(_userParameter).toList(growable: false),
+          setOnce: update.setOnce.entries
+              .map(_userParameter)
+              .toList(growable: false),
           unset: update.unset,
           increment: update.increment.entries
               .map((MapEntry<String, num> entry) => WtsIncrementData(

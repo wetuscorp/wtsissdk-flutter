@@ -8,6 +8,7 @@ import co.wetus.sdk.WtsRevenue
 import co.wetus.sdk.WtsReportedAttribution
 import co.wetus.sdk.WtsProfileConsent
 import co.wetus.sdk.WtsSdk
+import co.wetus.sdk.WtsSdkException
 import co.wetus.sdk.WtsUserUpdate
 import co.wetus.sdk.WtsUserValue
 import co.wetus.sdk.WtsValue
@@ -39,7 +40,7 @@ class WtsSdkPlugin : FlutterPlugin, WtsHostApi {
                 configuration.appKey,
                 WtsOptions(apiBaseUrl = configuration.apiBaseUrl ?: "https://api.wts.is/api/v1"),
             )
-        }.map { Unit })
+        }.map { Unit }.forFlutter())
     }
 
     override fun handle(url: String, callback: (Result<WtsDeepLinkData>) -> Unit) = launch(callback) {
@@ -55,7 +56,7 @@ class WtsSdkPlugin : FlutterPlugin, WtsHostApi {
             WtsSdk.shared().setProfileConsent(
                 if (granted) WtsProfileConsent.GRANTED else WtsProfileConsent.DENIED,
             )
-        })
+        }.forFlutter())
     }
 
     override fun identify(
@@ -119,7 +120,21 @@ class WtsSdkPlugin : FlutterPlugin, WtsHostApi {
     override fun flush(callback: (Result<Unit>) -> Unit) = launch(callback) { WtsSdk.shared().flush() }
 
     private fun <T> launch(callback: (Result<T>) -> Unit, block: suspend () -> T) {
-        scope.launch { callback(runCatching { block() }) }
+        scope.launch { callback(runCatching { block() }.forFlutter()) }
+    }
+
+    private fun <T> Result<T>.forFlutter(): Result<T> = fold(
+        onSuccess = { Result.success(it) },
+        onFailure = { Result.failure(it.toFlutterError()) },
+    )
+
+    private fun Throwable.toFlutterError(): FlutterError {
+        val sdkError = this as? WtsSdkException
+        return FlutterError(
+            code = sdkError?.code ?: "NATIVE_ERROR",
+            message = message ?: "Native SDK error.",
+            details = sdkError?.fallbackUri?.toString(),
+        )
     }
 
     private fun WtsDeepLink.toData() = WtsDeepLinkData(

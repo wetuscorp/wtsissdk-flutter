@@ -19,7 +19,7 @@ public final class WtsSdkPlugin: NSObject, FlutterPlugin, WtsHostApi {
                 }
                 try await WtsSDK.shared.configure(appKey: configuration.appKey, options: options)
                 completion(.success(()))
-            } catch { completion(.failure(error)) }
+            } catch { completion(.failure(platformError(error))) }
         }
     }
 
@@ -28,7 +28,7 @@ public final class WtsSdkPlugin: NSObject, FlutterPlugin, WtsHostApi {
             do {
                 guard let url = URL(string: url) else { throw WtsSDKError.invalidURL(fallbackURL: nil) }
                 completion(.success(try await WtsSDK.shared.handle(url: url).toData()))
-            } catch { completion(.failure(error)) }
+            } catch { completion(.failure(platformError(error))) }
         }
     }
 
@@ -44,7 +44,7 @@ public final class WtsSdkPlugin: NSObject, FlutterPlugin, WtsHostApi {
             do {
                 try await WtsSDK.shared.setProfileConsent(granted ? .granted : .denied)
                 completion(.success(()))
-            } catch { completion(.failure(error)) }
+            } catch { completion(.failure(platformError(error))) }
         }
     }
 
@@ -62,7 +62,7 @@ public final class WtsSdkPlugin: NSObject, FlutterPlugin, WtsHostApi {
                     )
                 )
                 completion(.success(()))
-            } catch { completion(.failure(error)) }
+            } catch { completion(.failure(platformError(error))) }
         }
     }
 
@@ -89,7 +89,7 @@ public final class WtsSdkPlugin: NSObject, FlutterPlugin, WtsHostApi {
                     )
                 )
                 completion(.success(()))
-            } catch { completion(.failure(error)) }
+            } catch { completion(.failure(platformError(error))) }
         }
     }
 
@@ -108,7 +108,7 @@ public final class WtsSdkPlugin: NSObject, FlutterPlugin, WtsHostApi {
                     )
                 )
                 completion(.success(()))
-            } catch { completion(.failure(error)) }
+            } catch { completion(.failure(platformError(error))) }
         }
     }
 
@@ -117,7 +117,7 @@ public final class WtsSdkPlugin: NSObject, FlutterPlugin, WtsHostApi {
             do {
                 try await WtsSDK.shared.resetIdentity()
                 completion(.success(()))
-            } catch { completion(.failure(error)) }
+            } catch { completion(.failure(platformError(error))) }
         }
     }
 
@@ -137,13 +137,28 @@ public final class WtsSdkPlugin: NSObject, FlutterPlugin, WtsHostApi {
                     linkId: linkId
                 )
                 completion(.success(()))
-            } catch { completion(.failure(error)) }
+            } catch { completion(.failure(platformError(error))) }
         }
     }
 
     func flush(completion: @escaping (Result<Void, Error>) -> Void) {
         Task { await WtsSDK.shared.flush(); completion(.success(())) }
     }
+}
+
+private func platformError(_ error: Error) -> Error {
+    guard let error = error as? WtsSDKError else {
+        return PigeonError(
+            code: "NATIVE_ERROR",
+            message: error.localizedDescription,
+            details: nil
+        )
+    }
+    return PigeonError(
+        code: error.code,
+        message: error.localizedDescription,
+        details: error.fallbackURL?.absoluteString
+    )
 }
 
 private extension WtsDeepLink {
