@@ -11,7 +11,7 @@ import 'package:pigeon/pigeon.dart';
     dartPackageName: 'wts_sdk',
   ),
 )
-enum WtsValueKind { string, number, boolean }
+enum WtsValueKind { string, number, boolean, date, stringArray }
 
 class WtsParameterData {
   WtsParameterData({
@@ -20,12 +20,46 @@ class WtsParameterData {
     this.stringValue,
     this.numberValue,
     this.booleanValue,
+    this.stringArrayValue,
   });
   String key;
   WtsValueKind kind;
   String? stringValue;
   double? numberValue;
   bool? booleanValue;
+  List<String>? stringArrayValue;
+}
+
+class WtsUserUpdateData {
+  WtsUserUpdateData({
+    required this.set,
+    required this.setOnce,
+    required this.unset,
+    required this.increment,
+  });
+  List<WtsParameterData> set;
+  List<WtsParameterData> setOnce;
+  List<String> unset;
+  List<WtsIncrementData> increment;
+}
+
+class WtsIncrementData {
+  WtsIncrementData({required this.key, required this.value});
+  String key;
+  double value;
+}
+
+class WtsReportedAttributionData {
+  WtsReportedAttributionData({
+    required this.source,
+    this.medium,
+    this.campaign,
+    this.externalRef,
+  });
+  String source;
+  String? medium;
+  String? campaign;
+  String? externalRef;
 }
 
 class WtsDeepLinkData {
@@ -65,6 +99,21 @@ abstract class WtsHostApi {
 
   @async
   WtsDeepLinkData? getDeferredDeepLink();
+
+  @async
+  void setProfileConsent(bool granted);
+
+  @async
+  void identify(String externalUserId, List<WtsParameterData> attributes);
+
+  @async
+  void updateUser(WtsUserUpdateData update);
+
+  @async
+  void setReportedAttribution(WtsReportedAttributionData attribution);
+
+  @async
+  void resetIdentity();
 
   @async
   void track(

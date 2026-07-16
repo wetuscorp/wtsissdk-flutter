@@ -5,7 +5,12 @@ import android.net.Uri
 import co.wetus.sdk.WtsDeepLink
 import co.wetus.sdk.WtsOptions
 import co.wetus.sdk.WtsRevenue
+import co.wetus.sdk.WtsReportedAttribution
+import co.wetus.sdk.WtsProfileConsent
 import co.wetus.sdk.WtsSdk
+import co.wetus.sdk.WtsSdkException
+import co.wetus.sdk.WtsUserUpdate
+import co.wetus.sdk.WtsUserValue
 import co.wetus.sdk.WtsValue
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import kotlinx.coroutines.CoroutineScope
@@ -35,7 +40,7 @@ class WtsSdkPlugin : FlutterPlugin, WtsHostApi {
                 configuration.appKey,
                 WtsOptions(apiBaseUrl = configuration.apiBaseUrl ?: "https://api.wts.is/api/v1"),
             )
-        }.map { Unit })
+        }.map { Unit }.forFlutter())
     }
 
     override fun handle(url: String, callback: (Result<WtsDeepLinkData>) -> Unit) = launch(callback) {
@@ -44,6 +49,57 @@ class WtsSdkPlugin : FlutterPlugin, WtsHostApi {
 
     override fun getDeferredDeepLink(callback: (Result<WtsDeepLinkData?>) -> Unit) = launch(callback) {
         WtsSdk.shared().getDeferredDeepLink()?.toData()
+    }
+
+    override fun setProfileConsent(granted: Boolean, callback: (Result<Unit>) -> Unit) {
+        callback(runCatching {
+            WtsSdk.shared().setProfileConsent(
+                if (granted) WtsProfileConsent.GRANTED else WtsProfileConsent.DENIED,
+            )
+        }.forFlutter())
+    }
+
+    override fun identify(
+        externalUserId: String,
+        attributes: List<WtsParameterData>,
+        callback: (Result<Unit>) -> Unit,
+    ) = launch(callback) {
+        WtsSdk.shared().identify(
+            externalUserId,
+            attributes.associate { it.key to it.toUserValue() },
+        )
+    }
+
+    override fun updateUser(
+        update: WtsUserUpdateData,
+        callback: (Result<Unit>) -> Unit,
+    ) = launch(callback) {
+        WtsSdk.shared().updateUser(
+            WtsUserUpdate(
+                set = update.set.associate { it.key to it.toUserValue() },
+                setOnce = update.setOnce.associate { it.key to it.toUserValue() },
+                unset = update.unset,
+                increment = update.increment.associate { it.key to it.value },
+            ),
+        )
+    }
+
+    override fun setReportedAttribution(
+        attribution: WtsReportedAttributionData,
+        callback: (Result<Unit>) -> Unit,
+    ) = launch(callback) {
+        WtsSdk.shared().setReportedAttribution(
+            WtsReportedAttribution(
+                source = attribution.source,
+                medium = attribution.medium,
+                campaign = attribution.campaign,
+                externalRef = attribution.externalRef,
+            ),
+        )
+    }
+
+    override fun resetIdentity(callback: (Result<Unit>) -> Unit) = launch(callback) {
+        WtsSdk.shared().resetIdentity()
     }
 
     override fun track(
@@ -64,7 +120,21 @@ class WtsSdkPlugin : FlutterPlugin, WtsHostApi {
     override fun flush(callback: (Result<Unit>) -> Unit) = launch(callback) { WtsSdk.shared().flush() }
 
     private fun <T> launch(callback: (Result<T>) -> Unit, block: suspend () -> T) {
-        scope.launch { callback(runCatching { block() }) }
+        scope.launch { callback(runCatching { block() }.forFlutter()) }
+    }
+
+    private fun <T> Result<T>.forFlutter(): Result<T> = fold(
+        onSuccess = { Result.success(it) },
+        onFailure = { Result.failure(it.toFlutterError()) },
+    )
+
+    private fun Throwable.toFlutterError(): FlutterError {
+        val sdkError = this as? WtsSdkException
+        return FlutterError(
+            code = sdkError?.code ?: "NATIVE_ERROR",
+            message = message ?: "Native SDK error.",
+            details = sdkError?.fallbackUri?.toString(),
+        )
     }
 
     private fun WtsDeepLink.toData() = WtsDeepLinkData(
@@ -85,5 +155,16 @@ class WtsSdkPlugin : FlutterPlugin, WtsHostApi {
         WtsValueKind.STRING -> WtsValue.of(requireNotNull(stringValue))
         WtsValueKind.NUMBER -> WtsValue.of(requireNotNull(numberValue))
         WtsValueKind.BOOLEAN -> WtsValue.of(requireNotNull(booleanValue))
+        WtsValueKind.DATE, WtsValueKind.STRING_ARRAY ->
+            error("Event properties do not support profile-only value types.")
+    }
+
+    private fun WtsParameterData.toUserValue() = when (kind) {
+        WtsValueKind.STRING -> WtsUserValue.of(requireNotNull(stringValue))
+        WtsValueKind.NUMBER -> WtsUserValue.of(requireNotNull(numberValue))
+        WtsValueKind.BOOLEAN -> WtsUserValue.of(requireNotNull(booleanValue))
+        WtsValueKind.DATE -> WtsUserValue.date(requireNotNull(stringValue))
+        WtsValueKind.STRING_ARRAY ->
+            WtsUserValue.strings(requireNotNull(stringArrayValue))
     }
 }

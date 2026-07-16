@@ -100,6 +100,8 @@ enum WtsValueKind {
   string,
   number,
   boolean,
+  date,
+  stringArray,
 }
 
 class WtsParameterData {
@@ -109,6 +111,7 @@ class WtsParameterData {
     this.stringValue,
     this.numberValue,
     this.booleanValue,
+    this.stringArrayValue,
   });
 
   String key;
@@ -121,6 +124,8 @@ class WtsParameterData {
 
   bool? booleanValue;
 
+  List<String>? stringArrayValue;
+
   List<Object?> _toList() {
     return <Object?>[
       key,
@@ -128,6 +133,7 @@ class WtsParameterData {
       stringValue,
       numberValue,
       booleanValue,
+      stringArrayValue,
     ];
   }
 
@@ -143,6 +149,7 @@ class WtsParameterData {
       stringValue: result[2] as String?,
       numberValue: result[3] as double?,
       booleanValue: result[4] as bool?,
+      stringArrayValue: (result[5] as List<Object?>?)?.cast<String>(),
     );
   }
 
@@ -159,7 +166,173 @@ class WtsParameterData {
         _deepEquals(kind, other.kind) &&
         _deepEquals(stringValue, other.stringValue) &&
         _deepEquals(numberValue, other.numberValue) &&
-        _deepEquals(booleanValue, other.booleanValue);
+        _deepEquals(booleanValue, other.booleanValue) &&
+        _deepEquals(stringArrayValue, other.stringArrayValue);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+}
+
+class WtsUserUpdateData {
+  WtsUserUpdateData({
+    required this.set,
+    required this.setOnce,
+    required this.unset,
+    required this.increment,
+  });
+
+  List<WtsParameterData> set;
+
+  List<WtsParameterData> setOnce;
+
+  List<String> unset;
+
+  List<WtsIncrementData> increment;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      set,
+      setOnce,
+      unset,
+      increment,
+    ];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static WtsUserUpdateData decode(Object result) {
+    result as List<Object?>;
+    return WtsUserUpdateData(
+      set: (result[0]! as List<Object?>).cast<WtsParameterData>(),
+      setOnce: (result[1]! as List<Object?>).cast<WtsParameterData>(),
+      unset: (result[2]! as List<Object?>).cast<String>(),
+      increment: (result[3]! as List<Object?>).cast<WtsIncrementData>(),
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! WtsUserUpdateData || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(set, other.set) &&
+        _deepEquals(setOnce, other.setOnce) &&
+        _deepEquals(unset, other.unset) &&
+        _deepEquals(increment, other.increment);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+}
+
+class WtsIncrementData {
+  WtsIncrementData({
+    required this.key,
+    required this.value,
+  });
+
+  String key;
+
+  double value;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      key,
+      value,
+    ];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static WtsIncrementData decode(Object result) {
+    result as List<Object?>;
+    return WtsIncrementData(
+      key: result[0]! as String,
+      value: result[1]! as double,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! WtsIncrementData || other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(key, other.key) && _deepEquals(value, other.value);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+}
+
+class WtsReportedAttributionData {
+  WtsReportedAttributionData({
+    required this.source,
+    this.medium,
+    this.campaign,
+    this.externalRef,
+  });
+
+  String source;
+
+  String? medium;
+
+  String? campaign;
+
+  String? externalRef;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      source,
+      medium,
+      campaign,
+      externalRef,
+    ];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static WtsReportedAttributionData decode(Object result) {
+    result as List<Object?>;
+    return WtsReportedAttributionData(
+      source: result[0]! as String,
+      medium: result[1] as String?,
+      campaign: result[2] as String?,
+      externalRef: result[3] as String?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! WtsReportedAttributionData ||
+        other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(source, other.source) &&
+        _deepEquals(medium, other.medium) &&
+        _deepEquals(campaign, other.campaign) &&
+        _deepEquals(externalRef, other.externalRef);
   }
 
   @override
@@ -339,14 +512,23 @@ class _PigeonCodec extends StandardMessageCodec {
     } else if (value is WtsParameterData) {
       buffer.putUint8(130);
       writeValue(buffer, value.encode());
-    } else if (value is WtsDeepLinkData) {
+    } else if (value is WtsUserUpdateData) {
       buffer.putUint8(131);
       writeValue(buffer, value.encode());
-    } else if (value is WtsRevenueData) {
+    } else if (value is WtsIncrementData) {
       buffer.putUint8(132);
       writeValue(buffer, value.encode());
-    } else if (value is WtsConfigurationData) {
+    } else if (value is WtsReportedAttributionData) {
       buffer.putUint8(133);
+      writeValue(buffer, value.encode());
+    } else if (value is WtsDeepLinkData) {
+      buffer.putUint8(134);
+      writeValue(buffer, value.encode());
+    } else if (value is WtsRevenueData) {
+      buffer.putUint8(135);
+      writeValue(buffer, value.encode());
+    } else if (value is WtsConfigurationData) {
+      buffer.putUint8(136);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -362,10 +544,16 @@ class _PigeonCodec extends StandardMessageCodec {
       case 130:
         return WtsParameterData.decode(readValue(buffer)!);
       case 131:
-        return WtsDeepLinkData.decode(readValue(buffer)!);
+        return WtsUserUpdateData.decode(readValue(buffer)!);
       case 132:
-        return WtsRevenueData.decode(readValue(buffer)!);
+        return WtsIncrementData.decode(readValue(buffer)!);
       case 133:
+        return WtsReportedAttributionData.decode(readValue(buffer)!);
+      case 134:
+        return WtsDeepLinkData.decode(readValue(buffer)!);
+      case 135:
+        return WtsRevenueData.decode(readValue(buffer)!);
+      case 136:
         return WtsConfigurationData.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
@@ -444,6 +632,102 @@ class WtsHostApi {
       isNullValid: true,
     );
     return pigeonVar_replyValue as WtsDeepLinkData?;
+  }
+
+  Future<void> setProfileConsent(bool granted) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.wts_sdk.WtsHostApi.setProfileConsent$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture =
+        pigeonVar_channel.send(<Object?>[granted]);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  Future<void> identify(
+      String externalUserId, List<WtsParameterData> attributes) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.wts_sdk.WtsHostApi.identify$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture =
+        pigeonVar_channel.send(<Object?>[externalUserId, attributes]);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  Future<void> updateUser(WtsUserUpdateData update) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.wts_sdk.WtsHostApi.updateUser$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture =
+        pigeonVar_channel.send(<Object?>[update]);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  Future<void> setReportedAttribution(
+      WtsReportedAttributionData attribution) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.wts_sdk.WtsHostApi.setReportedAttribution$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture =
+        pigeonVar_channel.send(<Object?>[attribution]);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
+  }
+
+  Future<void> resetIdentity() async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.wts_sdk.WtsHostApi.resetIdentity$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture = pigeonVar_channel.send(null);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: true,
+    );
   }
 
   Future<void> track(String eventKey, List<WtsParameterData> properties,

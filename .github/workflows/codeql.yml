@@ -28,7 +28,7 @@ jobs:
       - uses: github/codeql-action/analyze@v4
   ios:
     runs-on: macos-15
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v5
         with: { path: wts_sdk }
@@ -39,7 +39,7 @@ jobs:
       - uses: github/codeql-action/init@v4
         with: { languages: swift, build-mode: manual }
       - name: Prepare Flutter SwiftPM integration
-        run: cd wts_sdk/example && flutter config --enable-swift-package-manager && flutter pub get && flutter build ios --simulator
+        run: cd wts_sdk/example && flutter config --enable-swift-package-manager && flutter pub get && flutter build ios --simulator --config-only
         env: { WTS_SDK_SWIFT_PATH: "${{ github.workspace }}/native-swift" }
       - name: Build Swift sources under CodeQL tracing
         run: |
@@ -53,6 +53,6 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             ONLY_ACTIVE_ARCH=YES \
             ARCHS=arm64 \
-            clean build
+            build
         env: { WTS_SDK_SWIFT_PATH: "${{ github.workspace }}/native-swift" }
       - uses: github/codeql-action/analyze@v4

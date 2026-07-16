@@ -39,6 +39,34 @@ class WtsRevenue {
   final String currency;
 }
 
+class WtsUserUpdate {
+  const WtsUserUpdate({
+    this.set = const {},
+    this.setOnce = const {},
+    this.unset = const [],
+    this.increment = const {},
+  });
+
+  final Map<String, Object> set;
+  final Map<String, Object> setOnce;
+  final List<String> unset;
+  final Map<String, num> increment;
+}
+
+class WtsReportedAttribution {
+  const WtsReportedAttribution({
+    required this.source,
+    this.medium,
+    this.campaign,
+    this.externalRef,
+  });
+
+  final String source;
+  final String? medium;
+  final String? campaign;
+  final String? externalRef;
+}
+
 class WtsSdkException implements Exception {
   const WtsSdkException(this.code, this.message, {this.fallbackUrl});
   final String code;
@@ -65,6 +93,28 @@ class WtsSdk {
   static Future<WtsDeepLink?> getDeferredDeepLink() =>
       _guard(_platform.getDeferredDeepLink);
 
+  static Future<void> setProfileConsent(bool granted) =>
+      _guard(() => _platform.setProfileConsent(granted));
+
+  static Future<void> identify(
+    String externalUserId, {
+    Map<String, Object> attributes = const {},
+  }) {
+    _validateUserAttributes(attributes);
+    return _guard(() => _platform.identify(externalUserId, attributes));
+  }
+
+  static Future<void> updateUser(WtsUserUpdate update) {
+    _validateUserUpdate(update);
+    return _guard(() => _platform.updateUser(update));
+  }
+
+  static Future<void> setReportedAttribution(
+          WtsReportedAttribution attribution) =>
+      _guard(() => _platform.setReportedAttribution(attribution));
+
+  static Future<void> resetIdentity() => _guard(_platform.resetIdentity);
+
   static Future<void> track(
     String eventKey, {
     Map<String, Object> properties = const {},
@@ -84,10 +134,13 @@ class WtsSdk {
     try {
       return await operation();
     } on PlatformException catch (error) {
+      final Uri? nativeFallback = error.details is String
+          ? Uri.tryParse(error.details as String)
+          : null;
       throw WtsSdkException(
         error.code,
         error.message ?? 'Native SDK error.',
-        fallbackUrl: fallbackUrl,
+        fallbackUrl: fallbackUrl ?? nativeFallback,
       );
     }
   }
@@ -109,12 +162,68 @@ class WtsSdk {
       }
     }
   }
+
+  static void _validateUserAttributes(Map<String, Object> attributes) {
+    if (attributes.length > 50) {
+      throw ArgumentError.value(
+          attributes, 'attributes', 'At most 50 attributes are supported.');
+    }
+    for (final MapEntry<String, Object> entry in attributes.entries) {
+      if (!RegExp(r'^[a-z][a-z0-9_]{0,63}$').hasMatch(entry.key)) {
+        throw ArgumentError.value(
+            entry.key, 'attribute key', 'Expected lowercase snake_case.');
+      }
+      final Object value = entry.value;
+      if (value is! String &&
+          value is! num &&
+          value is! bool &&
+          value is! DateTime &&
+          value is! List<String>) {
+        throw ArgumentError.value(value, entry.key,
+            'Expected String, number, bool, DateTime, or List<String>.');
+      }
+    }
+  }
+
+  static void _validateUserUpdate(WtsUserUpdate update) {
+    _validateUserAttributes(update.set);
+    _validateUserAttributes(update.setOnce);
+    final List<String> keys = <String>[
+      ...update.set.keys,
+      ...update.setOnce.keys,
+      ...update.unset,
+      ...update.increment.keys,
+    ];
+    if (keys.isEmpty ||
+        keys.length > 50 ||
+        keys.toSet().length != keys.length) {
+      throw ArgumentError.value(
+        update,
+        'update',
+        'Expected 1 to 50 unique attribute operations.',
+      );
+    }
+    for (final String key in <String>[
+      ...update.unset,
+      ...update.increment.keys
+    ]) {
+      if (!RegExp(r'^[a-z][a-z0-9_]{0,63}$').hasMatch(key)) {
+        throw ArgumentError.value(
+            key, 'attribute key', 'Expected lowercase snake_case.');
+      }
+    }
+  }
 }
 
 abstract interface class WtsPlatform {
   Future<void> configure(String appKey, String? apiBaseUrl);
   Future<WtsDeepLink> handle(String url);
   Future<WtsDeepLink?> getDeferredDeepLink();
+  Future<void> setProfileConsent(bool granted);
+  Future<void> identify(String externalUserId, Map<String, Object> attributes);
+  Future<void> updateUser(WtsUserUpdate update);
+  Future<void> setReportedAttribution(WtsReportedAttribution attribution);
+  Future<void> resetIdentity();
   Future<void> track(
     String eventKey,
     Map<String, Object> properties,
@@ -140,6 +249,49 @@ class PigeonWtsPlatform implements WtsPlatform {
     final WtsDeepLinkData? result = await _api.getDeferredDeepLink();
     return result == null ? null : _fromData(result);
   }
+
+  @override
+  Future<void> setProfileConsent(bool granted) =>
+      _api.setProfileConsent(granted);
+
+  @override
+  Future<void> identify(
+          String externalUserId, Map<String, Object> attributes) =>
+      _api.identify(
+        externalUserId,
+        attributes.entries.map(_userParameter).toList(growable: false),
+      );
+
+  @override
+  Future<void> updateUser(WtsUserUpdate update) => _api.updateUser(
+        WtsUserUpdateData(
+          set: update.set.entries.map(_userParameter).toList(growable: false),
+          setOnce: update.setOnce.entries
+              .map(_userParameter)
+              .toList(growable: false),
+          unset: update.unset,
+          increment: update.increment.entries
+              .map((MapEntry<String, num> entry) => WtsIncrementData(
+                    key: entry.key,
+                    value: entry.value.toDouble(),
+                  ))
+              .toList(growable: false),
+        ),
+      );
+
+  @override
+  Future<void> setReportedAttribution(WtsReportedAttribution attribution) =>
+      _api.setReportedAttribution(
+        WtsReportedAttributionData(
+          source: attribution.source,
+          medium: attribution.medium,
+          campaign: attribution.campaign,
+          externalRef: attribution.externalRef,
+        ),
+      );
+
+  @override
+  Future<void> resetIdentity() => _api.resetIdentity();
 
   @override
   Future<void> track(
@@ -192,9 +344,30 @@ class PigeonWtsPlatform implements WtsPlatform {
     );
   }
 
+  static WtsParameterData _userParameter(MapEntry<String, Object> entry) {
+    final Object value = entry.value;
+    if (value is DateTime) {
+      return WtsParameterData(
+        key: entry.key,
+        kind: WtsValueKind.date,
+        stringValue: value.toUtc().toIso8601String(),
+      );
+    }
+    if (value is List<String>) {
+      return WtsParameterData(
+        key: entry.key,
+        kind: WtsValueKind.stringArray,
+        stringArrayValue: value,
+      );
+    }
+    return _parameter(entry);
+  }
+
   static Object _value(WtsParameterData item) => switch (item.kind) {
         WtsValueKind.string => item.stringValue!,
         WtsValueKind.number => item.numberValue!,
         WtsValueKind.boolean => item.booleanValue!,
+        WtsValueKind.date => item.stringValue!,
+        WtsValueKind.stringArray => item.stringArrayValue!,
       };
 }

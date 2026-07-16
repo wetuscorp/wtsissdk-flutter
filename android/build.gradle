@@ -1,5 +1,5 @@
 group 'co.wetus.sdk.flutter'
-version '0.1.0-alpha.1'
+version '0.2.0-alpha.1'
 
 buildscript {
     repositories { google(); mavenCentral() }
@@ -18,4 +18,4 @@ android {
 }
 kotlin { jvmToolchain(17) }
 repositories { google(); mavenLocal(); mavenCentral() }
-dependencies { implementation 'co.wetus:wts-sdk:0.1.0-alpha.1'; implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2' }
+dependencies { implementation 'co.wetus:wts-sdk:0.2.0-alpha.1'; implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2' }

@@ -195,7 +195,9 @@ class FlutterError (
 enum class WtsValueKind(val raw: Int) {
   STRING(0),
   NUMBER(1),
-  BOOLEAN(2);
+  BOOLEAN(2),
+  DATE(3),
+  STRING_ARRAY(4);
 
   companion object {
     fun ofRaw(raw: Int): WtsValueKind? {
@@ -210,7 +212,8 @@ data class WtsParameterData (
   val kind: WtsValueKind,
   val stringValue: String? = null,
   val numberValue: Double? = null,
-  val booleanValue: Boolean? = null
+  val booleanValue: Boolean? = null,
+  val stringArrayValue: List<String>? = null
 )
  {
   companion object {
@@ -220,7 +223,8 @@ data class WtsParameterData (
       val stringValue = pigeonVar_list[2] as String?
       val numberValue = pigeonVar_list[3] as Double?
       val booleanValue = pigeonVar_list[4] as Boolean?
-      return WtsParameterData(key, kind, stringValue, numberValue, booleanValue)
+      val stringArrayValue = pigeonVar_list[5] as List<String>?
+      return WtsParameterData(key, kind, stringValue, numberValue, booleanValue, stringArrayValue)
     }
   }
   fun toList(): List<Any?> {
@@ -230,6 +234,7 @@ data class WtsParameterData (
       stringValue,
       numberValue,
       booleanValue,
+      stringArrayValue,
     )
   }
   override fun equals(other: Any?): Boolean {
@@ -240,7 +245,7 @@ data class WtsParameterData (
       return true
     }
     val other = other as WtsParameterData
-    return WtsMessagesPigeonUtils.deepEquals(this.key, other.key) && WtsMessagesPigeonUtils.deepEquals(this.kind, other.kind) && WtsMessagesPigeonUtils.deepEquals(this.stringValue, other.stringValue) && WtsMessagesPigeonUtils.deepEquals(this.numberValue, other.numberValue) && WtsMessagesPigeonUtils.deepEquals(this.booleanValue, other.booleanValue)
+    return WtsMessagesPigeonUtils.deepEquals(this.key, other.key) && WtsMessagesPigeonUtils.deepEquals(this.kind, other.kind) && WtsMessagesPigeonUtils.deepEquals(this.stringValue, other.stringValue) && WtsMessagesPigeonUtils.deepEquals(this.numberValue, other.numberValue) && WtsMessagesPigeonUtils.deepEquals(this.booleanValue, other.booleanValue) && WtsMessagesPigeonUtils.deepEquals(this.stringArrayValue, other.stringArrayValue)
   }
 
   override fun hashCode(): Int {
@@ -250,6 +255,137 @@ data class WtsParameterData (
     result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.stringValue)
     result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.numberValue)
     result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.booleanValue)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.stringArrayValue)
+    return result
+  }
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class WtsUserUpdateData (
+  val set: List<WtsParameterData>,
+  val setOnce: List<WtsParameterData>,
+  val unset: List<String>,
+  val increment: List<WtsIncrementData>
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): WtsUserUpdateData {
+      val set = pigeonVar_list[0] as List<WtsParameterData>
+      val setOnce = pigeonVar_list[1] as List<WtsParameterData>
+      val unset = pigeonVar_list[2] as List<String>
+      val increment = pigeonVar_list[3] as List<WtsIncrementData>
+      return WtsUserUpdateData(set, setOnce, unset, increment)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      set,
+      setOnce,
+      unset,
+      increment,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as WtsUserUpdateData
+    return WtsMessagesPigeonUtils.deepEquals(this.set, other.set) && WtsMessagesPigeonUtils.deepEquals(this.setOnce, other.setOnce) && WtsMessagesPigeonUtils.deepEquals(this.unset, other.unset) && WtsMessagesPigeonUtils.deepEquals(this.increment, other.increment)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.set)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.setOnce)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.unset)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.increment)
+    return result
+  }
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class WtsIncrementData (
+  val key: String,
+  val value: Double
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): WtsIncrementData {
+      val key = pigeonVar_list[0] as String
+      val value = pigeonVar_list[1] as Double
+      return WtsIncrementData(key, value)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      key,
+      value,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as WtsIncrementData
+    return WtsMessagesPigeonUtils.deepEquals(this.key, other.key) && WtsMessagesPigeonUtils.deepEquals(this.value, other.value)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.key)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.value)
+    return result
+  }
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class WtsReportedAttributionData (
+  val source: String,
+  val medium: String? = null,
+  val campaign: String? = null,
+  val externalRef: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): WtsReportedAttributionData {
+      val source = pigeonVar_list[0] as String
+      val medium = pigeonVar_list[1] as String?
+      val campaign = pigeonVar_list[2] as String?
+      val externalRef = pigeonVar_list[3] as String?
+      return WtsReportedAttributionData(source, medium, campaign, externalRef)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      source,
+      medium,
+      campaign,
+      externalRef,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as WtsReportedAttributionData
+    return WtsMessagesPigeonUtils.deepEquals(this.source, other.source) && WtsMessagesPigeonUtils.deepEquals(this.medium, other.medium) && WtsMessagesPigeonUtils.deepEquals(this.campaign, other.campaign) && WtsMessagesPigeonUtils.deepEquals(this.externalRef, other.externalRef)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.source)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.medium)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.campaign)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.externalRef)
     return result
   }
 }
@@ -394,15 +530,30 @@ private open class WtsMessagesPigeonCodec : StandardMessageCodec() {
       }
       131.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          WtsDeepLinkData.fromList(it)
+          WtsUserUpdateData.fromList(it)
         }
       }
       132.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
-          WtsRevenueData.fromList(it)
+          WtsIncrementData.fromList(it)
         }
       }
       133.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          WtsReportedAttributionData.fromList(it)
+        }
+      }
+      134.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          WtsDeepLinkData.fromList(it)
+        }
+      }
+      135.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          WtsRevenueData.fromList(it)
+        }
+      }
+      136.toByte() -> {
         return (readValue(buffer) as? List<Any?>)?.let {
           WtsConfigurationData.fromList(it)
         }
@@ -420,16 +571,28 @@ private open class WtsMessagesPigeonCodec : StandardMessageCodec() {
         stream.write(130)
         writeValue(stream, value.toList())
       }
-      is WtsDeepLinkData -> {
+      is WtsUserUpdateData -> {
         stream.write(131)
         writeValue(stream, value.toList())
       }
-      is WtsRevenueData -> {
+      is WtsIncrementData -> {
         stream.write(132)
         writeValue(stream, value.toList())
       }
-      is WtsConfigurationData -> {
+      is WtsReportedAttributionData -> {
         stream.write(133)
+        writeValue(stream, value.toList())
+      }
+      is WtsDeepLinkData -> {
+        stream.write(134)
+        writeValue(stream, value.toList())
+      }
+      is WtsRevenueData -> {
+        stream.write(135)
+        writeValue(stream, value.toList())
+      }
+      is WtsConfigurationData -> {
+        stream.write(136)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)
@@ -443,6 +606,11 @@ interface WtsHostApi {
   fun configure(configuration: WtsConfigurationData, callback: (Result<Unit>) -> Unit)
   fun handle(url: String, callback: (Result<WtsDeepLinkData>) -> Unit)
   fun getDeferredDeepLink(callback: (Result<WtsDeepLinkData?>) -> Unit)
+  fun setProfileConsent(granted: Boolean, callback: (Result<Unit>) -> Unit)
+  fun identify(externalUserId: String, attributes: List<WtsParameterData>, callback: (Result<Unit>) -> Unit)
+  fun updateUser(update: WtsUserUpdateData, callback: (Result<Unit>) -> Unit)
+  fun setReportedAttribution(attribution: WtsReportedAttributionData, callback: (Result<Unit>) -> Unit)
+  fun resetIdentity(callback: (Result<Unit>) -> Unit)
   fun track(eventKey: String, properties: List<WtsParameterData>, revenue: WtsRevenueData?, linkId: String?, callback: (Result<Unit>) -> Unit)
   fun flush(callback: (Result<Unit>) -> Unit)
 
@@ -505,6 +673,100 @@ interface WtsHostApi {
               } else {
                 val data = result.getOrNull()
                 reply.reply(WtsMessagesPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.wts_sdk.WtsHostApi.setProfileConsent$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val grantedArg = args[0] as Boolean
+            api.setProfileConsent(grantedArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(WtsMessagesPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(WtsMessagesPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.wts_sdk.WtsHostApi.identify$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val externalUserIdArg = args[0] as String
+            val attributesArg = args[1] as List<WtsParameterData>
+            api.identify(externalUserIdArg, attributesArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(WtsMessagesPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(WtsMessagesPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.wts_sdk.WtsHostApi.updateUser$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val updateArg = args[0] as WtsUserUpdateData
+            api.updateUser(updateArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(WtsMessagesPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(WtsMessagesPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.wts_sdk.WtsHostApi.setReportedAttribution$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val attributionArg = args[0] as WtsReportedAttributionData
+            api.setReportedAttribution(attributionArg) { result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(WtsMessagesPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(WtsMessagesPigeonUtils.wrapResult(null))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.wts_sdk.WtsHostApi.resetIdentity$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            api.resetIdentity{ result: Result<Unit> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(WtsMessagesPigeonUtils.wrapError(error))
+              } else {
+                reply.reply(WtsMessagesPigeonUtils.wrapResult(null))
               }
             }
           }
