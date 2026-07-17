@@ -47,6 +47,22 @@ void main() {
     expect(platform.revenue?.currency, 'TRY');
   });
 
+  test('screen validates and forwards scalar context to the native core',
+      () async {
+    await WtsSdk.screen(
+      'checkout',
+      properties: <String, Object>{'cart_total': 749.90, 'item_count': 3},
+    );
+    expect(platform.lastScreen, 'checkout');
+  });
+
+  test('diagnostics expose the PII-free test device token', () async {
+    final WtsExperienceDiagnostics diagnostics =
+        await WtsSdk.getExperienceDiagnostics();
+
+    expect(diagnostics.testDeviceToken, 'test-device-token');
+  });
+
   test('handle errors retain the original web fallback URL', () async {
     platform.handleError = PlatformException(code: 'TIMEOUT');
     final Uri url = Uri.parse('https://demo.links.wts.is/summer');
@@ -94,9 +110,15 @@ class FakePlatform implements WtsPlatform {
   WtsRevenue? revenue;
   Object? handleError;
   Object? configureError;
+  String? lastScreen;
 
   @override
-  Future<void> configure(String appKey, String? apiBaseUrl) async {
+  Future<void> configure(
+    String appKey,
+    String? apiBaseUrl,
+    String? collectorBaseUrl,
+    WtsExperienceOptions experiences,
+  ) async {
     if (configureError case final Object error) throw error;
   }
 
@@ -145,4 +167,28 @@ class FakePlatform implements WtsPlatform {
     trackCalls += 1;
     this.revenue = revenue;
   }
+
+  @override
+  Future<void> screen(String name, Map<String, Object> properties) async {
+    lastScreen = name;
+  }
+
+  @override
+  Future<void> setExperienceConsent(WtsExperienceConsent consent) async {}
+
+  @override
+  Future<bool> presentNextExperience() async => false;
+
+  @override
+  Future<bool> dismissCurrentExperience() async => false;
+
+  @override
+  Future<WtsExperienceDiagnostics> getExperienceDiagnostics() async =>
+      const WtsExperienceDiagnostics(
+        enabled: false,
+        consent: WtsExperienceConsent.pending,
+        queued: 0,
+        presenting: false,
+        testDeviceToken: 'test-device-token',
+      );
 }

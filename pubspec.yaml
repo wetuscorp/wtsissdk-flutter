@@ -1,6 +1,6 @@
 name: wts_sdk
-description: Official wts.is deep-link and attribution SDK for Flutter.
-version: 0.2.0-alpha.1
+description: Official wts.is deep-link, analytics, identity and Experiences SDK for Flutter.
+version: 0.3.0-alpha.1
 homepage: https://wts.is
 documentation: https://wts.is/en/resources/docs/sdk-flutter
 repository: https://github.com/wetuscorp/wtsissdk-flutter

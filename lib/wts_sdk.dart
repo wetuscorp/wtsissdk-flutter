@@ -67,6 +67,115 @@ class WtsReportedAttribution {
   final String? externalRef;
 }
 
+enum WtsExperienceConsent { pending, contextual, personalized, denied }
+
+enum WtsExperienceRenderMode { automatic, manual }
+
+class WtsExperienceOptions {
+  const WtsExperienceOptions({
+    this.enabled = false,
+    this.renderMode = WtsExperienceRenderMode.automatic,
+    this.allowedInternalRoutes = const {},
+    this.allowedCallbackKeys = const {},
+    this.allowedDeepLinkHosts = const {},
+    this.allowedDeepLinkSchemes = const {},
+    this.allowedWebOrigins = const {},
+  });
+
+  final bool enabled;
+  final WtsExperienceRenderMode renderMode;
+  final Set<String> allowedInternalRoutes;
+  final Set<String> allowedCallbackKeys;
+  final Set<String> allowedDeepLinkHosts;
+  final Set<String> allowedDeepLinkSchemes;
+  final Set<String> allowedWebOrigins;
+}
+
+class WtsExperienceDiagnostics {
+  const WtsExperienceDiagnostics({
+    required this.enabled,
+    required this.consent,
+    required this.queued,
+    required this.presenting,
+    required this.testDeviceToken,
+    this.lastErrorCode,
+  });
+
+  final bool enabled;
+  final WtsExperienceConsent consent;
+  final int queued;
+  final bool presenting;
+  final String testDeviceToken;
+  final String? lastErrorCode;
+}
+
+class WtsExperienceAction {
+  const WtsExperienceAction({
+    required this.id,
+    required this.label,
+    required this.type,
+    this.target,
+  });
+
+  final String id;
+  final String label;
+  final String type;
+  final String? target;
+}
+
+class WtsExperienceTranslation {
+  const WtsExperienceTranslation({
+    required this.title,
+    required this.description,
+    this.primaryAction,
+    this.secondaryAction,
+  });
+
+  final String title;
+  final String description;
+  final WtsExperienceAction? primaryAction;
+  final WtsExperienceAction? secondaryAction;
+}
+
+class WtsExperience {
+  const WtsExperience({
+    required this.campaignId,
+    required this.campaignVersionId,
+    required this.assignmentId,
+    required this.variantId,
+    required this.exposureId,
+    required this.placement,
+    required this.priority,
+    required this.translations,
+    required this.closeable,
+    required this.themePreset,
+    required this.delaySeconds,
+    this.autoCloseSeconds,
+    this.assetUrl,
+  });
+
+  final String campaignId;
+  final String campaignVersionId;
+  final String assignmentId;
+  final String variantId;
+  final String exposureId;
+  final String placement;
+  final int priority;
+  final Map<String, WtsExperienceTranslation> translations;
+  final bool closeable;
+  final String themePreset;
+  final double delaySeconds;
+  final double? autoCloseSeconds;
+  final Uri? assetUrl;
+}
+
+typedef WtsExperienceAvailableHandler = void Function(WtsExperience experience);
+typedef WtsExperienceActionHandler = void Function(
+  WtsExperience experience,
+  WtsExperienceAction action,
+);
+typedef WtsUnsubscribe = void Function();
+
 class WtsSdkException implements Exception {
   const WtsSdkException(this.code, this.message, {this.fallbackUrl});
   final String code;
@@ -80,12 +189,25 @@ class WtsSdkException implements Exception {
 class WtsSdk {
   WtsSdk._();
   static WtsPlatform _platform = PigeonWtsPlatform();
+  static final Set<WtsExperienceAvailableHandler> _experienceAvailableHandlers =
+      <WtsExperienceAvailableHandler>{};
+  static final Set<WtsExperienceActionHandler> _experienceActionHandlers =
+      <WtsExperienceActionHandler>{};
+  static bool _experienceCallbacksConfigured = false;
 
   @visibleForTesting
   static set platform(WtsPlatform value) => _platform = value;
 
-  static Future<void> configure({required String appKey, String? apiBaseUrl}) =>
-      _guard(() => _platform.configure(appKey, apiBaseUrl));
+  static Future<void> configure({
+    required String appKey,
+    String? apiBaseUrl,
+    String? collectorBaseUrl,
+    WtsExperienceOptions experiences = const WtsExperienceOptions(),
+  }) {
+    if (_platform is PigeonWtsPlatform) _ensureExperienceCallbacks();
+    return _guard(() =>
+        _platform.configure(appKey, apiBaseUrl, collectorBaseUrl, experiences));
+  }
 
   static Future<WtsDeepLink> handle(Uri uri) =>
       _guard(() => _platform.handle(uri.toString()), fallbackUrl: uri);
@@ -125,7 +247,53 @@ class WtsSdk {
     return _guard(() => _platform.track(eventKey, properties, revenue, linkId));
   }
 
+  static Future<void> screen(
+    String name, {
+    Map<String, Object> properties = const {},
+  }) {
+    _validateProperties(properties);
+    if (name.trim().isEmpty || name.trim().length > 120) {
+      throw ArgumentError.value(
+          name, 'name', 'Expected a screen name of 1 to 120 characters.');
+    }
+    return _guard(() => _platform.screen(name.trim(), properties));
+  }
+
+  static Future<void> setExperienceConsent(WtsExperienceConsent consent) =>
+      _guard(() => _platform.setExperienceConsent(consent));
+
+  static Future<bool> presentNextExperience() =>
+      _guard(_platform.presentNextExperience);
+
+  static Future<bool> dismissCurrentExperience() =>
+      _guard(_platform.dismissCurrentExperience);
+
+  static Future<WtsExperienceDiagnostics> getExperienceDiagnostics() =>
+      _guard(_platform.getExperienceDiagnostics);
+
+  static WtsUnsubscribe onExperienceAvailable(
+    WtsExperienceAvailableHandler handler,
+  ) {
+    if (_platform is PigeonWtsPlatform) _ensureExperienceCallbacks();
+    _experienceAvailableHandlers.add(handler);
+    return () => _experienceAvailableHandlers.remove(handler);
+  }
+
+  static WtsUnsubscribe onExperienceAction(
+    WtsExperienceActionHandler handler,
+  ) {
+    if (_platform is PigeonWtsPlatform) _ensureExperienceCallbacks();
+    _experienceActionHandlers.add(handler);
+    return () => _experienceActionHandlers.remove(handler);
+  }
+
   static Future<void> flush() => _guard(_platform.flush);
+
+  static void _ensureExperienceCallbacks() {
+    if (_experienceCallbacksConfigured) return;
+    WtsFlutterApi.setUp(_WtsFlutterCallbacks());
+    _experienceCallbacksConfigured = true;
+  }
 
   static Future<T> _guard<T>(
     Future<T> Function() operation, {
@@ -215,8 +383,75 @@ class WtsSdk {
   }
 }
 
+class _WtsFlutterCallbacks implements WtsFlutterApi {
+  @override
+  void onExperienceAvailable(WtsExperienceData experience) {
+    final WtsExperience value = _experienceFromData(experience);
+    for (final WtsExperienceAvailableHandler handler
+        in List<WtsExperienceAvailableHandler>.of(
+            WtsSdk._experienceAvailableHandlers)) {
+      handler(value);
+    }
+  }
+
+  @override
+  void onExperienceAction(
+    WtsExperienceData experience,
+    WtsExperienceActionData action,
+  ) {
+    final WtsExperience value = _experienceFromData(experience);
+    final WtsExperienceAction actionValue = _actionFromData(action);
+    for (final WtsExperienceActionHandler handler
+        in List<WtsExperienceActionHandler>.of(
+            WtsSdk._experienceActionHandlers)) {
+      handler(value, actionValue);
+    }
+  }
+}
+
+WtsExperience _experienceFromData(WtsExperienceData data) => WtsExperience(
+      campaignId: data.campaignId,
+      campaignVersionId: data.campaignVersionId,
+      assignmentId: data.assignmentId,
+      variantId: data.variantId,
+      exposureId: data.exposureId,
+      placement: data.placement,
+      priority: data.priority,
+      translations: <String, WtsExperienceTranslation>{
+        for (final WtsExperienceTranslationData item in data.translations)
+          item.locale: WtsExperienceTranslation(
+            title: item.title,
+            description: item.description,
+            primaryAction: item.primaryAction == null
+                ? null
+                : _actionFromData(item.primaryAction!),
+            secondaryAction: item.secondaryAction == null
+                ? null
+                : _actionFromData(item.secondaryAction!),
+          ),
+      },
+      closeable: data.closeable,
+      themePreset: data.themePreset,
+      delaySeconds: data.delaySeconds,
+      autoCloseSeconds: data.autoCloseSeconds,
+      assetUrl: data.assetUrl == null ? null : Uri.tryParse(data.assetUrl!),
+    );
+
+WtsExperienceAction _actionFromData(WtsExperienceActionData data) =>
+    WtsExperienceAction(
+      id: data.id,
+      label: data.label,
+      type: data.type,
+      target: data.target,
+    );
+
 abstract interface class WtsPlatform {
-  Future<void> configure(String appKey, String? apiBaseUrl);
+  Future<void> configure(
+    String appKey,
+    String? apiBaseUrl,
+    String? collectorBaseUrl,
+    WtsExperienceOptions experiences,
+  );
   Future<WtsDeepLink> handle(String url);
   Future<WtsDeepLink?> getDeferredDeepLink();
   Future<void> setProfileConsent(bool granted);
@@ -230,6 +465,11 @@ abstract interface class WtsPlatform {
     WtsRevenue? revenue,
     String? linkId,
   );
+  Future<void> screen(String name, Map<String, Object> properties);
+  Future<void> setExperienceConsent(WtsExperienceConsent consent);
+  Future<bool> presentNextExperience();
+  Future<bool> dismissCurrentExperience();
+  Future<WtsExperienceDiagnostics> getExperienceDiagnostics();
   Future<void> flush();
 }
 
@@ -237,8 +477,24 @@ class PigeonWtsPlatform implements WtsPlatform {
   final WtsHostApi _api = WtsHostApi();
 
   @override
-  Future<void> configure(String appKey, String? apiBaseUrl) => _api
-      .configure(WtsConfigurationData(appKey: appKey, apiBaseUrl: apiBaseUrl));
+  Future<void> configure(
+    String appKey,
+    String? apiBaseUrl,
+    String? collectorBaseUrl,
+    WtsExperienceOptions experiences,
+  ) =>
+      _api.configure(WtsConfigurationData(
+        appKey: appKey,
+        apiBaseUrl: apiBaseUrl,
+        collectorBaseUrl: collectorBaseUrl,
+        experiencesEnabled: experiences.enabled,
+        experienceRenderMode: experiences.renderMode.name,
+        allowedInternalRoutes: experiences.allowedInternalRoutes.toList(),
+        allowedCallbackKeys: experiences.allowedCallbackKeys.toList(),
+        allowedDeepLinkHosts: experiences.allowedDeepLinkHosts.toList(),
+        allowedDeepLinkSchemes: experiences.allowedDeepLinkSchemes.toList(),
+        allowedWebOrigins: experiences.allowedWebOrigins.toList(),
+      ));
 
   @override
   Future<WtsDeepLink> handle(String url) async =>
@@ -309,6 +565,38 @@ class PigeonWtsPlatform implements WtsPlatform {
                 amount: revenue.amount, currency: revenue.currency),
         linkId,
       );
+
+  @override
+  Future<void> screen(String name, Map<String, Object> properties) =>
+      _api.screen(
+        name,
+        properties.entries.map(_parameter).toList(growable: false),
+      );
+
+  @override
+  Future<void> setExperienceConsent(WtsExperienceConsent consent) async {
+    await _api.setExperienceConsent(consent.name);
+  }
+
+  @override
+  Future<bool> presentNextExperience() => _api.presentNextExperience();
+
+  @override
+  Future<bool> dismissCurrentExperience() => _api.dismissCurrentExperience();
+
+  @override
+  Future<WtsExperienceDiagnostics> getExperienceDiagnostics() async {
+    final WtsExperienceDiagnosticsData data =
+        await _api.getExperienceDiagnostics();
+    return WtsExperienceDiagnostics(
+      enabled: data.enabled,
+      consent: WtsExperienceConsent.values.byName(data.consent),
+      queued: data.queued,
+      presenting: data.presenting,
+      testDeviceToken: data.testDeviceToken,
+      lastErrorCode: data.lastErrorCode,
+    );
+  }
 
   @override
   Future<void> flush() => _api.flush();

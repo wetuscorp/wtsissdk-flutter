@@ -84,9 +84,114 @@ class WtsRevenueData {
 }
 
 class WtsConfigurationData {
-  WtsConfigurationData({required this.appKey, this.apiBaseUrl});
+  WtsConfigurationData({
+    required this.appKey,
+    this.apiBaseUrl,
+    this.collectorBaseUrl,
+    required this.experiencesEnabled,
+    required this.experienceRenderMode,
+    required this.allowedInternalRoutes,
+    required this.allowedCallbackKeys,
+    required this.allowedDeepLinkHosts,
+    required this.allowedDeepLinkSchemes,
+    required this.allowedWebOrigins,
+  });
   String appKey;
   String? apiBaseUrl;
+  String? collectorBaseUrl;
+  bool experiencesEnabled;
+  String experienceRenderMode;
+  List<String> allowedInternalRoutes;
+  List<String> allowedCallbackKeys;
+  List<String> allowedDeepLinkHosts;
+  List<String> allowedDeepLinkSchemes;
+  List<String> allowedWebOrigins;
+}
+
+class WtsExperienceDiagnosticsData {
+  WtsExperienceDiagnosticsData({
+    required this.enabled,
+    required this.consent,
+    required this.queued,
+    required this.presenting,
+    required this.testDeviceToken,
+    this.lastErrorCode,
+  });
+  bool enabled;
+  String consent;
+  int queued;
+  bool presenting;
+  String testDeviceToken;
+  String? lastErrorCode;
+}
+
+class WtsExperienceActionData {
+  WtsExperienceActionData({
+    required this.id,
+    required this.label,
+    required this.type,
+    this.target,
+  });
+  String id;
+  String label;
+  String type;
+  String? target;
+}
+
+class WtsExperienceTranslationData {
+  WtsExperienceTranslationData({
+    required this.locale,
+    required this.title,
+    required this.description,
+    this.primaryAction,
+    this.secondaryAction,
+  });
+  String locale;
+  String title;
+  String description;
+  WtsExperienceActionData? primaryAction;
+  WtsExperienceActionData? secondaryAction;
+}
+
+class WtsExperienceData {
+  WtsExperienceData({
+    required this.campaignId,
+    required this.campaignVersionId,
+    required this.assignmentId,
+    required this.variantId,
+    required this.exposureId,
+    required this.placement,
+    required this.priority,
+    required this.translations,
+    required this.closeable,
+    required this.themePreset,
+    required this.delaySeconds,
+    this.autoCloseSeconds,
+    this.assetUrl,
+  });
+  String campaignId;
+  String campaignVersionId;
+  String assignmentId;
+  String variantId;
+  String exposureId;
+  String placement;
+  int priority;
+  List<WtsExperienceTranslationData> translations;
+  bool closeable;
+  String themePreset;
+  double delaySeconds;
+  double? autoCloseSeconds;
+  String? assetUrl;
+}
+
+@FlutterApi()
+abstract class WtsFlutterApi {
+  void onExperienceAvailable(WtsExperienceData experience);
+
+  void onExperienceAction(
+    WtsExperienceData experience,
+    WtsExperienceActionData action,
+  );
 }
 
 @HostApi()
@@ -122,6 +227,21 @@ abstract class WtsHostApi {
     WtsRevenueData? revenue,
     String? linkId,
   );
+
+  @async
+  void screen(String name, List<WtsParameterData> properties);
+
+  @async
+  String setExperienceConsent(String consent);
+
+  @async
+  bool presentNextExperience();
+
+  @async
+  bool dismissCurrentExperience();
+
+  @async
+  WtsExperienceDiagnosticsData getExperienceDiagnostics();
 
   @async
   void flush();

@@ -3,8 +3,18 @@ import UIKit
 import WtsSDK
 
 public final class WtsSdkPlugin: NSObject, FlutterPlugin, WtsHostApi {
+    private let flutterApi: WtsFlutterApi
+
+    private init(messenger: FlutterBinaryMessenger) {
+        flutterApi = WtsFlutterApi(binaryMessenger: messenger)
+        super.init()
+    }
+
     public static func register(with registrar: FlutterPluginRegistrar) {
-        WtsHostApiSetup.setUp(binaryMessenger: registrar.messenger(), api: WtsSdkPlugin())
+        WtsHostApiSetup.setUp(
+            binaryMessenger: registrar.messenger(),
+            api: WtsSdkPlugin(messenger: registrar.messenger())
+        )
     }
 
     func configure(
@@ -17,7 +27,39 @@ public final class WtsSdkPlugin: NSObject, FlutterPlugin, WtsHostApi {
                 if let value = configuration.apiBaseUrl, let url = URL(string: value) {
                     options.apiBaseURL = url
                 }
+                if let value = configuration.collectorBaseUrl, let url = URL(string: value) {
+                    options.collectorBaseURL = url
+                }
+                options.experiences = WtsExperienceOptions(
+                    enabled: configuration.experiencesEnabled,
+                    renderMode: configuration.experienceRenderMode == "manual"
+                        ? .manual
+                        : .automatic,
+                    allowedInternalRoutes: Set(configuration.allowedInternalRoutes),
+                    allowedCallbackKeys: Set(configuration.allowedCallbackKeys),
+                    allowedDeepLinkHosts: Set(configuration.allowedDeepLinkHosts),
+                    allowedDeepLinkSchemes: Set(configuration.allowedDeepLinkSchemes),
+                    allowedWebOrigins: Set(configuration.allowedWebOrigins)
+                )
                 try await WtsSDK.shared.configure(appKey: configuration.appKey, options: options)
+                await WtsSDK.shared.onExperienceAvailable { [weak self] experience in
+                    guard let self else { return }
+                    DispatchQueue.main.async {
+                        self.flutterApi.onExperienceAvailable(
+                            experience: experience.toData()
+                        ) { _ in }
+                    }
+                }
+                await WtsSDK.shared.onExperienceAction { [weak self] experience, action in
+                    guard let self else { return false }
+                    DispatchQueue.main.async {
+                        self.flutterApi.onExperienceAction(
+                            experience: experience.toData(),
+                            action: action.toData()
+                        ) { _ in }
+                    }
+                    return false
+                }
                 completion(.success(()))
             } catch { completion(.failure(platformError(error))) }
         }
@@ -141,6 +183,80 @@ public final class WtsSdkPlugin: NSObject, FlutterPlugin, WtsHostApi {
         }
     }
 
+    func screen(
+        name: String,
+        properties: [WtsParameterData],
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        Task {
+            do {
+                try await WtsSDK.shared.screen(
+                    name,
+                    properties: Dictionary(
+                        uniqueKeysWithValues: properties.map { ($0.key, $0.toValue()) }
+                    )
+                )
+                completion(.success(()))
+            } catch { completion(.failure(platformError(error))) }
+        }
+    }
+
+    func setExperienceConsent(
+        consent: String,
+        completion: @escaping (Result<String, Error>) -> Void
+    ) {
+        Task {
+            do {
+                guard let value = WtsExperienceConsent(rawValue: consent) else {
+                    throw PigeonError(
+                        code: "INVALID_EXPERIENCE_CONSENT",
+                        message: "Unsupported experience consent value.",
+                        details: nil
+                    )
+                }
+                let result = try await WtsSDK.shared.setExperienceConsent(value)
+                completion(.success(String(describing: result)))
+            } catch { completion(.failure(platformError(error))) }
+        }
+    }
+
+    func presentNextExperience(
+        completion: @escaping (Result<Bool, Error>) -> Void
+    ) {
+        Task {
+            completion(.success(await WtsSDK.shared.presentNextExperience() != nil))
+        }
+    }
+
+    func dismissCurrentExperience(
+        completion: @escaping (Result<Bool, Error>) -> Void
+    ) {
+        Task {
+            await WtsSDK.shared.dismissCurrentExperience()
+            completion(.success(true))
+        }
+    }
+
+    func getExperienceDiagnostics(
+        completion: @escaping (Result<WtsExperienceDiagnosticsData, Error>) -> Void
+    ) {
+        Task {
+            let value = await WtsSDK.shared.getExperienceDiagnostics()
+            completion(
+                .success(
+                    WtsExperienceDiagnosticsData(
+                        enabled: value.enabled,
+                        consent: value.consent.rawValue,
+                        queued: Int64(value.queued),
+                        presenting: value.presenting,
+                        testDeviceToken: value.testDeviceToken,
+                        lastErrorCode: value.lastErrorCode
+                    )
+                )
+            )
+        }
+    }
+
     func flush(completion: @escaping (Result<Void, Error>) -> Void) {
         Task { await WtsSDK.shared.flush(); completion(.success(())) }
     }
@@ -169,6 +285,45 @@ private extension WtsDeepLink {
             linkId: linkId,
             attributionId: attributionId,
             isDeferred: isDeferred
+        )
+    }
+}
+
+private extension WtsExperience {
+    func toData() -> WtsExperienceData {
+        WtsExperienceData(
+            campaignId: campaignId,
+            campaignVersionId: campaignVersionId,
+            assignmentId: assignmentId,
+            variantId: variantId,
+            exposureId: exposureId,
+            placement: placement.rawValue,
+            priority: Int64(priority),
+            translations: content.translations.map { locale, value in
+                WtsExperienceTranslationData(
+                    locale: locale,
+                    title: value.title,
+                    description: value.description,
+                    primaryAction: value.primaryAction?.toData(),
+                    secondaryAction: value.secondaryAction?.toData()
+                )
+            },
+            closeable: content.closeable,
+            themePreset: content.themePreset,
+            delaySeconds: content.delaySeconds,
+            autoCloseSeconds: content.autoCloseSeconds,
+            assetUrl: assetURL?.absoluteString
+        )
+    }
+}
+
+private extension WtsExperienceAction {
+    func toData() -> WtsExperienceActionData {
+        WtsExperienceActionData(
+            id: id,
+            label: label,
+            type: type.rawValue,
+            target: target
         )
     }
 }

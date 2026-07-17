@@ -1,3 +1,10 @@
+## 0.3.0-alpha.1
+
+- Wrapped Mobile Protocol V3 built-in screen tracking from both native cores.
+- Added explicitly opt-in contextual and personalized Experiences consent.
+- Added native automatic/manual presentation and diagnostics through generated Pigeon channels.
+- Kept delivery, persistence, safe actions and impression measurement in the Swift/Kotlin cores.
+
 ## 0.2.0-alpha.1
 
 - Added consent-gated cross-SDK identity, managed user attributes, reported attribution, and identity reset through the native Swift and Android cores.
