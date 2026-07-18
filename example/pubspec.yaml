@@ -19,3 +19,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  # The runnable iOS example exercises the CocoaPods compatibility path.
+  # The plugin's SwiftPM package is validated independently in CI.
+  config:
+    enable-swift-package-manager: false
