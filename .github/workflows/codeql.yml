@@ -40,7 +40,9 @@ jobs:
         with: { languages: swift, build-mode: manual }
       - name: Prepare Flutter SwiftPM integration
         run: cd wts_sdk/example && flutter config --enable-swift-package-manager && flutter pub get && flutter build ios --simulator --config-only
-        env: { WTS_SDK_SWIFT_PATH: "${{ github.workspace }}/native-swift" }
+        env:
+          WTS_SDK_SWIFT_PATH: "${{ github.workspace }}/native-swift"
+          WTS_SDK_SWIFT_POD_PATH: "${{ github.workspace }}/native-swift"
       - name: Build Swift sources under CodeQL tracing
         run: |
           xcodebuild \
@@ -54,5 +56,7 @@ jobs:
             ONLY_ACTIVE_ARCH=YES \
             ARCHS=arm64 \
             build
-        env: { WTS_SDK_SWIFT_PATH: "${{ github.workspace }}/native-swift" }
+        env:
+          WTS_SDK_SWIFT_PATH: "${{ github.workspace }}/native-swift"
+          WTS_SDK_SWIFT_POD_PATH: "${{ github.workspace }}/native-swift"
       - uses: github/codeql-action/analyze@v4
