@@ -1300,7 +1300,7 @@ class WtsFlutterApi(private val binaryMessenger: BinaryMessenger, private val me
         }
       } else {
         callback(Result.failure(WtsMessagesPigeonUtils.createConnectionError(channelName)))
-      } 
+      }
     }
   }
   fun onExperienceAction(experienceArg: WtsExperienceData, actionArg: WtsExperienceActionData, callback: (Result<Unit>) -> Unit)
@@ -1317,7 +1317,7 @@ class WtsFlutterApi(private val binaryMessenger: BinaryMessenger, private val me
         }
       } else {
         callback(Result.failure(WtsMessagesPigeonUtils.createConnectionError(channelName)))
-      } 
+      }
     }
   }
 }

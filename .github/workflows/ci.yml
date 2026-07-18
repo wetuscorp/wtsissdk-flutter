@@ -24,8 +24,12 @@ jobs:
       - run: flutter test
       - name: Verify generated platform bindings
         run: |
-          dart run pigeon --input pigeons/messages.dart
-          dart format lib/src/messages.g.dart
+          chmod +x scripts/generate-bindings.sh
+          scripts/generate-bindings.sh
+          git diff --check -- \
+            lib/src/messages.g.dart \
+            android/src/main/kotlin/co/wetus/sdk/flutter/WtsMessages.g.kt \
+            ios/wts_sdk/Sources/wts_sdk/WtsMessages.g.swift
           git diff --exit-code -- \
             lib/src/messages.g.dart \
             android/src/main/kotlin/co/wetus/sdk/flutter/WtsMessages.g.kt \
