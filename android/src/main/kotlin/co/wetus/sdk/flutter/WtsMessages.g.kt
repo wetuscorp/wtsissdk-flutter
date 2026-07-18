@@ -749,7 +749,6 @@ data class WtsExperienceData (
   val campaignVersionId: String,
   val assignmentId: String,
   val variantId: String,
-  val exposureId: String,
   val placement: String,
   val priority: Long,
   val translations: List<WtsExperienceTranslationData>,
@@ -766,16 +765,15 @@ data class WtsExperienceData (
       val campaignVersionId = pigeonVar_list[1] as String
       val assignmentId = pigeonVar_list[2] as String
       val variantId = pigeonVar_list[3] as String
-      val exposureId = pigeonVar_list[4] as String
-      val placement = pigeonVar_list[5] as String
-      val priority = pigeonVar_list[6] as Long
-      val translations = pigeonVar_list[7] as List<WtsExperienceTranslationData>
-      val closeable = pigeonVar_list[8] as Boolean
-      val themePreset = pigeonVar_list[9] as String
-      val delaySeconds = pigeonVar_list[10] as Double
-      val autoCloseSeconds = pigeonVar_list[11] as Double?
-      val assetUrl = pigeonVar_list[12] as String?
-      return WtsExperienceData(campaignId, campaignVersionId, assignmentId, variantId, exposureId, placement, priority, translations, closeable, themePreset, delaySeconds, autoCloseSeconds, assetUrl)
+      val placement = pigeonVar_list[4] as String
+      val priority = pigeonVar_list[5] as Long
+      val translations = pigeonVar_list[6] as List<WtsExperienceTranslationData>
+      val closeable = pigeonVar_list[7] as Boolean
+      val themePreset = pigeonVar_list[8] as String
+      val delaySeconds = pigeonVar_list[9] as Double
+      val autoCloseSeconds = pigeonVar_list[10] as Double?
+      val assetUrl = pigeonVar_list[11] as String?
+      return WtsExperienceData(campaignId, campaignVersionId, assignmentId, variantId, placement, priority, translations, closeable, themePreset, delaySeconds, autoCloseSeconds, assetUrl)
     }
   }
   fun toList(): List<Any?> {
@@ -784,7 +782,6 @@ data class WtsExperienceData (
       campaignVersionId,
       assignmentId,
       variantId,
-      exposureId,
       placement,
       priority,
       translations,
@@ -803,7 +800,7 @@ data class WtsExperienceData (
       return true
     }
     val other = other as WtsExperienceData
-    return WtsMessagesPigeonUtils.deepEquals(this.campaignId, other.campaignId) && WtsMessagesPigeonUtils.deepEquals(this.campaignVersionId, other.campaignVersionId) && WtsMessagesPigeonUtils.deepEquals(this.assignmentId, other.assignmentId) && WtsMessagesPigeonUtils.deepEquals(this.variantId, other.variantId) && WtsMessagesPigeonUtils.deepEquals(this.exposureId, other.exposureId) && WtsMessagesPigeonUtils.deepEquals(this.placement, other.placement) && WtsMessagesPigeonUtils.deepEquals(this.priority, other.priority) && WtsMessagesPigeonUtils.deepEquals(this.translations, other.translations) && WtsMessagesPigeonUtils.deepEquals(this.closeable, other.closeable) && WtsMessagesPigeonUtils.deepEquals(this.themePreset, other.themePreset) && WtsMessagesPigeonUtils.deepEquals(this.delaySeconds, other.delaySeconds) && WtsMessagesPigeonUtils.deepEquals(this.autoCloseSeconds, other.autoCloseSeconds) && WtsMessagesPigeonUtils.deepEquals(this.assetUrl, other.assetUrl)
+    return WtsMessagesPigeonUtils.deepEquals(this.campaignId, other.campaignId) && WtsMessagesPigeonUtils.deepEquals(this.campaignVersionId, other.campaignVersionId) && WtsMessagesPigeonUtils.deepEquals(this.assignmentId, other.assignmentId) && WtsMessagesPigeonUtils.deepEquals(this.variantId, other.variantId) && WtsMessagesPigeonUtils.deepEquals(this.placement, other.placement) && WtsMessagesPigeonUtils.deepEquals(this.priority, other.priority) && WtsMessagesPigeonUtils.deepEquals(this.translations, other.translations) && WtsMessagesPigeonUtils.deepEquals(this.closeable, other.closeable) && WtsMessagesPigeonUtils.deepEquals(this.themePreset, other.themePreset) && WtsMessagesPigeonUtils.deepEquals(this.delaySeconds, other.delaySeconds) && WtsMessagesPigeonUtils.deepEquals(this.autoCloseSeconds, other.autoCloseSeconds) && WtsMessagesPigeonUtils.deepEquals(this.assetUrl, other.assetUrl)
   }
 
   override fun hashCode(): Int {
@@ -812,7 +809,6 @@ data class WtsExperienceData (
     result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.campaignVersionId)
     result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.assignmentId)
     result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.variantId)
-    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.exposureId)
     result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.placement)
     result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.priority)
     result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.translations)

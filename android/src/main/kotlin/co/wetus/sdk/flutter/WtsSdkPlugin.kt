@@ -362,7 +362,6 @@ class WtsSdkPlugin : FlutterPlugin, WtsHostApi {
         campaignVersionId = campaignVersionId,
         assignmentId = assignmentId,
         variantId = variantId,
-        exposureId = exposureId,
         placement = placement.name.lowercase(),
         priority = priority.toLong(),
         translations = content.translations.map { (locale, value) ->

@@ -465,8 +465,13 @@ void main() {
       ),
     );
     WtsExperienceManualPresentation? presentation;
+    WtsExperience? actionExperience;
     final WtsUnsubscribe unsubscribe = WtsSdk.onExperienceAvailable(
       (WtsExperienceManualPresentation value) => presentation = value,
+    );
+    final WtsUnsubscribe actionUnsubscribe = WtsSdk.onExperienceAction(
+      (WtsExperience experience, WtsExperienceAction _) =>
+          actionExperience = experience,
     );
 
     await messenger.handlePlatformMessage(
@@ -478,7 +483,6 @@ void main() {
             campaignVersionId: 'version-1',
             assignmentId: 'assignment-1',
             variantId: 'variant-a',
-            exposureId: 'exposure-1',
             placement: 'modal',
             priority: 10,
             translations: <pigeon.WtsExperienceTranslationData>[],
@@ -501,6 +505,34 @@ void main() {
     );
     expect(
       () => (received.handle as dynamic).exposureId,
+      throwsNoSuchMethodError,
+    );
+    await messenger.handlePlatformMessage(
+      'dev.flutter.pigeon.wts_sdk.WtsFlutterApi.onExperienceAction',
+      pigeon.WtsFlutterApi.pigeonChannelCodec.encodeMessage(<Object?>[
+        pigeon.WtsExperienceData(
+          campaignId: 'campaign-checkout',
+          campaignVersionId: 'version-1',
+          assignmentId: 'assignment-1',
+          variantId: 'variant-a',
+          placement: 'modal',
+          priority: 10,
+          translations: <pigeon.WtsExperienceTranslationData>[],
+          closeable: true,
+          themePreset: 'default',
+          delaySeconds: 0,
+        ),
+        pigeon.WtsExperienceActionData(
+          id: 'primary-cta',
+          label: 'Continue',
+          type: 'OPEN_INTERNAL_ROUTE',
+        ),
+      ]),
+      (ByteData? _) {},
+    );
+    expect(actionExperience?.campaignId, 'campaign-checkout');
+    expect(
+      () => (actionExperience as dynamic).exposureId,
       throwsNoSuchMethodError,
     );
     expect((await WtsSdk.acknowledgeExperienceRender(received.handle)).accepted,
@@ -526,6 +558,7 @@ void main() {
     expect(automaticPresentCalls, 0);
     expect(automaticDismissCalls, 0);
     unsubscribe();
+    actionUnsubscribe();
   });
 
   test('handle errors retain the original web fallback URL', () async {

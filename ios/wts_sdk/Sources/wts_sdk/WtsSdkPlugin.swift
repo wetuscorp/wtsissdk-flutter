@@ -443,7 +443,6 @@ private extension WtsExperience {
             campaignVersionId: campaignVersionId,
             assignmentId: assignmentId,
             variantId: variantId,
-            exposureId: exposureId,
             placement: placement.rawValue,
             priority: Int64(priority),
             translations: content.translations.map { locale, value in

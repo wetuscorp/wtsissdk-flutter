@@ -733,7 +733,6 @@ struct WtsExperienceData: Hashable {
   var campaignVersionId: String
   var assignmentId: String
   var variantId: String
-  var exposureId: String
   var placement: String
   var priority: Int64
   var translations: [WtsExperienceTranslationData]
@@ -750,22 +749,20 @@ struct WtsExperienceData: Hashable {
     let campaignVersionId = pigeonVar_list[1] as! String
     let assignmentId = pigeonVar_list[2] as! String
     let variantId = pigeonVar_list[3] as! String
-    let exposureId = pigeonVar_list[4] as! String
-    let placement = pigeonVar_list[5] as! String
-    let priority = pigeonVar_list[6] as! Int64
-    let translations = pigeonVar_list[7] as! [WtsExperienceTranslationData]
-    let closeable = pigeonVar_list[8] as! Bool
-    let themePreset = pigeonVar_list[9] as! String
-    let delaySeconds = pigeonVar_list[10] as! Double
-    let autoCloseSeconds: Double? = nilOrValue(pigeonVar_list[11])
-    let assetUrl: String? = nilOrValue(pigeonVar_list[12])
+    let placement = pigeonVar_list[4] as! String
+    let priority = pigeonVar_list[5] as! Int64
+    let translations = pigeonVar_list[6] as! [WtsExperienceTranslationData]
+    let closeable = pigeonVar_list[7] as! Bool
+    let themePreset = pigeonVar_list[8] as! String
+    let delaySeconds = pigeonVar_list[9] as! Double
+    let autoCloseSeconds: Double? = nilOrValue(pigeonVar_list[10])
+    let assetUrl: String? = nilOrValue(pigeonVar_list[11])
 
     return WtsExperienceData(
       campaignId: campaignId,
       campaignVersionId: campaignVersionId,
       assignmentId: assignmentId,
       variantId: variantId,
-      exposureId: exposureId,
       placement: placement,
       priority: priority,
       translations: translations,
@@ -782,7 +779,6 @@ struct WtsExperienceData: Hashable {
       campaignVersionId,
       assignmentId,
       variantId,
-      exposureId,
       placement,
       priority,
       translations,
@@ -797,7 +793,7 @@ struct WtsExperienceData: Hashable {
     if Swift.type(of: lhs) != Swift.type(of: rhs) {
       return false
     }
-    return deepEqualsWtsMessages(lhs.campaignId, rhs.campaignId) && deepEqualsWtsMessages(lhs.campaignVersionId, rhs.campaignVersionId) && deepEqualsWtsMessages(lhs.assignmentId, rhs.assignmentId) && deepEqualsWtsMessages(lhs.variantId, rhs.variantId) && deepEqualsWtsMessages(lhs.exposureId, rhs.exposureId) && deepEqualsWtsMessages(lhs.placement, rhs.placement) && deepEqualsWtsMessages(lhs.priority, rhs.priority) && deepEqualsWtsMessages(lhs.translations, rhs.translations) && deepEqualsWtsMessages(lhs.closeable, rhs.closeable) && deepEqualsWtsMessages(lhs.themePreset, rhs.themePreset) && deepEqualsWtsMessages(lhs.delaySeconds, rhs.delaySeconds) && deepEqualsWtsMessages(lhs.autoCloseSeconds, rhs.autoCloseSeconds) && deepEqualsWtsMessages(lhs.assetUrl, rhs.assetUrl)
+    return deepEqualsWtsMessages(lhs.campaignId, rhs.campaignId) && deepEqualsWtsMessages(lhs.campaignVersionId, rhs.campaignVersionId) && deepEqualsWtsMessages(lhs.assignmentId, rhs.assignmentId) && deepEqualsWtsMessages(lhs.variantId, rhs.variantId) && deepEqualsWtsMessages(lhs.placement, rhs.placement) && deepEqualsWtsMessages(lhs.priority, rhs.priority) && deepEqualsWtsMessages(lhs.translations, rhs.translations) && deepEqualsWtsMessages(lhs.closeable, rhs.closeable) && deepEqualsWtsMessages(lhs.themePreset, rhs.themePreset) && deepEqualsWtsMessages(lhs.delaySeconds, rhs.delaySeconds) && deepEqualsWtsMessages(lhs.autoCloseSeconds, rhs.autoCloseSeconds) && deepEqualsWtsMessages(lhs.assetUrl, rhs.assetUrl)
   }
 
   func hash(into hasher: inout Hasher) {
@@ -806,7 +802,6 @@ struct WtsExperienceData: Hashable {
     deepHashWtsMessages(value: campaignVersionId, hasher: &hasher)
     deepHashWtsMessages(value: assignmentId, hasher: &hasher)
     deepHashWtsMessages(value: variantId, hasher: &hasher)
-    deepHashWtsMessages(value: exposureId, hasher: &hasher)
     deepHashWtsMessages(value: placement, hasher: &hasher)
     deepHashWtsMessages(value: priority, hasher: &hasher)
     deepHashWtsMessages(value: translations, hasher: &hasher)

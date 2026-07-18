@@ -2,19 +2,21 @@
 
 Official Flutter wrapper for the wts.is Swift and Android SDKs. Generated Pigeon channels preserve scalar parameter types and revenue precision; networking, install identity and event persistence stay in the native cores.
 
-> `0.4.0-alpha.1` release line · Mobile Protocol V3 + Identity V1 + Experiences V1 + SDK Test Session V1 · Flutter 3.35+ · iOS 15+ · Android API 23+
+> `0.4.0-alpha.1` · Mobile Protocol V3 + Identity V1 + Experiences V1 + SDK Test Session V1 · Flutter 3.35+ · iOS 15+ · Android API 23+
 
-> **Release compatibility:** SDK Test & Validate and Experiences require the
-> matching `0.4.0-alpha.1` Flutter package **and** matching published
-> Swift/Android core releases. The wrapper deliberately pins those native
-> dependencies exactly; release the native cores before this package.
+> **Native-core compatibility:** `wts_sdk 0.4.0-alpha.1` pins Android
+> `co.wetus:wts-sdk:0.4.0-alpha.1` and iOS `WtsSDK 0.4.0-alpha.1` exactly.
+> Keep these companion native cores on the same version; do not override them
+> to an earlier or later release.
 
 ## Install
 
 ```yaml
 dependencies:
-  wts_sdk: <matching-published-version>
+  wts_sdk: 0.4.0-alpha.1
 ```
+
+Then run `flutter pub get`.
 
 ## Configure and handle links
 
@@ -103,9 +105,10 @@ payload before it is parsed.
 configuration above with `renderMode: WtsExperienceRenderMode.manual` before
 registering a handler. The SDK then emits
 typed renderable content and one opaque SDK-issued presentation handle only
-when a candidate is available. Delivery identifiers never enter the public
-manual payload. The host owns UI presentation and must acknowledge the actual
-lifecycle:
+when a candidate is available. Delivery identifiers never enter public
+Experience payloads; the SDK keeps the correlation required for manual
+lifecycle acknowledgements inside the opaque handle. The host owns UI
+presentation and must acknowledge the actual lifecycle:
 
 ```dart
 final unsubscribe = WtsSdk.onExperienceAvailable((presentation) async {
@@ -130,7 +133,7 @@ handles. `presentNextExperience()` and `dismissCurrentExperience()` are for
 automatic rendering; manual mode never invokes native presentation or emits a
 second availability callback.
 
-For an unpublished device test, copy
+For a dashboard test device, copy
 `(await WtsSdk.getExperienceDiagnostics()).testDeviceToken` into the dashboard
 test panel for the matching Mobile App. The random source-scoped token contains
 no install, user, or profile identifier, and test traffic is excluded from

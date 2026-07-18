@@ -1,15 +1,16 @@
-> SDK Test & Validate and Experiences require matching published Flutter,
-> Swift, and Android releases. Native core `0.4.0-alpha.1` artifacts must be
-> available before the Flutter wrapper is published.
-
 ## 0.4.0-alpha.1
 
+- Pins Android `co.wetus:wts-sdk:0.4.0-alpha.1` and iOS `WtsSDK
+  0.4.0-alpha.1` exactly; keep the Flutter wrapper and both native cores on
+  this matching version.
 - Added verified Experiences manifest delivery: the wrapper passes a pinned
   Ed25519 public-key ring to the native cores, which verify the signed payload
   before parsing it. Unverified outer manifest content is not used.
 - Replaced the ambiguous manual-presentation callback with an opaque
   presentation handle and explicit render, impression, action, and dismissal
   lifecycle acknowledgements.
+- Removed delivery correlation identifiers from public Experience payloads;
+  manual lifecycle correlation remains internal to the opaque handle.
 - Preserved SDK Test Session V1 pairing, probes, diagnostics, and isolated
   test-only Experience reporting.
 

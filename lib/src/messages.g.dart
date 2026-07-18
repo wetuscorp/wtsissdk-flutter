@@ -815,7 +815,6 @@ class WtsExperienceData {
     required this.campaignVersionId,
     required this.assignmentId,
     required this.variantId,
-    required this.exposureId,
     required this.placement,
     required this.priority,
     required this.translations,
@@ -833,8 +832,6 @@ class WtsExperienceData {
   String assignmentId;
 
   String variantId;
-
-  String exposureId;
 
   String placement;
 
@@ -858,7 +855,6 @@ class WtsExperienceData {
       campaignVersionId,
       assignmentId,
       variantId,
-      exposureId,
       placement,
       priority,
       translations,
@@ -881,16 +877,15 @@ class WtsExperienceData {
       campaignVersionId: result[1]! as String,
       assignmentId: result[2]! as String,
       variantId: result[3]! as String,
-      exposureId: result[4]! as String,
-      placement: result[5]! as String,
-      priority: result[6]! as int,
+      placement: result[4]! as String,
+      priority: result[5]! as int,
       translations:
-          (result[7]! as List<Object?>).cast<WtsExperienceTranslationData>(),
-      closeable: result[8]! as bool,
-      themePreset: result[9]! as String,
-      delaySeconds: result[10]! as double,
-      autoCloseSeconds: result[11] as double?,
-      assetUrl: result[12] as String?,
+          (result[6]! as List<Object?>).cast<WtsExperienceTranslationData>(),
+      closeable: result[7]! as bool,
+      themePreset: result[8]! as String,
+      delaySeconds: result[9]! as double,
+      autoCloseSeconds: result[10] as double?,
+      assetUrl: result[11] as String?,
     );
   }
 
@@ -907,7 +902,6 @@ class WtsExperienceData {
         _deepEquals(campaignVersionId, other.campaignVersionId) &&
         _deepEquals(assignmentId, other.assignmentId) &&
         _deepEquals(variantId, other.variantId) &&
-        _deepEquals(exposureId, other.exposureId) &&
         _deepEquals(placement, other.placement) &&
         _deepEquals(priority, other.priority) &&
         _deepEquals(translations, other.translations) &&

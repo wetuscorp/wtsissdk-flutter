@@ -167,7 +167,6 @@ class WtsExperienceData {
     required this.campaignVersionId,
     required this.assignmentId,
     required this.variantId,
-    required this.exposureId,
     required this.placement,
     required this.priority,
     required this.translations,
@@ -181,7 +180,6 @@ class WtsExperienceData {
   String campaignVersionId;
   String assignmentId;
   String variantId;
-  String exposureId;
   String placement;
   int priority;
   List<WtsExperienceTranslationData> translations;

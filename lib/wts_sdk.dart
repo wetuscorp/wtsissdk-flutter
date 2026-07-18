@@ -153,7 +153,6 @@ class WtsExperience {
     required this.campaignVersionId,
     required this.assignmentId,
     required this.variantId,
-    required this.exposureId,
     required this.placement,
     required this.priority,
     required this.translations,
@@ -168,7 +167,6 @@ class WtsExperience {
   final String campaignVersionId;
   final String assignmentId;
   final String variantId;
-  final String exposureId;
   final String placement;
   final int priority;
   final Map<String, WtsExperienceTranslation> translations;
@@ -722,7 +720,6 @@ WtsExperience _experienceFromData(WtsExperienceData data) => WtsExperience(
       campaignVersionId: data.campaignVersionId,
       assignmentId: data.assignmentId,
       variantId: data.variantId,
-      exposureId: data.exposureId,
       placement: data.placement,
       priority: data.priority,
       translations: <String, WtsExperienceTranslation>{
