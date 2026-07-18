@@ -35,16 +35,16 @@ public final class WtsSdkPlugin: NSObject, FlutterPlugin, WtsHostApi {
                     renderMode: configuration.experienceRenderMode == "manual"
                         ? .manual
                         : .automatic,
-                    allowedInternalRoutes: Set(configuration.allowedInternalRoutes),
-                    allowedCallbackKeys: Set(configuration.allowedCallbackKeys),
-                    allowedDeepLinkHosts: Set(configuration.allowedDeepLinkHosts),
-                    allowedDeepLinkSchemes: Set(configuration.allowedDeepLinkSchemes),
-                    allowedWebOrigins: Set(configuration.allowedWebOrigins),
                     manifestVerificationKeys: Dictionary(
                         uniqueKeysWithValues: configuration.manifestVerificationKeys.map {
                             ($0.kid, $0.value)
                         }
-                    )
+                    ),
+                    allowedInternalRoutes: Set(configuration.allowedInternalRoutes),
+                    allowedCallbackKeys: Set(configuration.allowedCallbackKeys),
+                    allowedDeepLinkHosts: Set(configuration.allowedDeepLinkHosts),
+                    allowedDeepLinkSchemes: Set(configuration.allowedDeepLinkSchemes),
+                    allowedWebOrigins: Set(configuration.allowedWebOrigins)
                 )
                 try await WtsSDK.shared.configure(appKey: configuration.appKey, options: options)
                 await WtsSDK.shared.onExperienceAvailable { [weak self] presentation in
