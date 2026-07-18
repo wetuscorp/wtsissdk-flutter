@@ -99,7 +99,9 @@ Never derive these values from, or place, server signing secrets in a client.
 The native core ignores the unsigned outer manifest and verifies its signed
 payload before it is parsed.
 
-`automatic` rendering stays in the native core. For `manual`, the SDK emits
+`automatic` rendering stays in the native core. For `manual`, replace the
+configuration above with `renderMode: WtsExperienceRenderMode.manual` before
+registering a handler. The SDK then emits
 typed renderable content and one opaque SDK-issued presentation handle only
 when a candidate is available. Delivery identifiers never enter the public
 manual payload. The host owns UI presentation and must acknowledge the actual
