@@ -39,4 +39,4 @@ Finish with `leaveTestSession()`.
 The pairing credential must not be logged, stored by the app, or reused. Test
 signals use an SDK-owned bounded queue separate from production analytics and
 Experiences. These APIs require matching published Flutter, Android, and iOS
-SDK releases; the `0.3.0-alpha.1` source line is not a publication claim.
+SDK releases from the `0.4.0-alpha.1` release line.

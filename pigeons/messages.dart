@@ -95,6 +95,7 @@ class WtsConfigurationData {
     required this.allowedDeepLinkHosts,
     required this.allowedDeepLinkSchemes,
     required this.allowedWebOrigins,
+    required this.manifestVerificationKeys,
   });
   String appKey;
   String? apiBaseUrl;
@@ -106,6 +107,13 @@ class WtsConfigurationData {
   List<String> allowedDeepLinkHosts;
   List<String> allowedDeepLinkSchemes;
   List<String> allowedWebOrigins;
+  List<WtsManifestVerificationKeyData> manifestVerificationKeys;
+}
+
+class WtsManifestVerificationKeyData {
+  WtsManifestVerificationKeyData({required this.kid, required this.value});
+  String kid;
+  String value;
 }
 
 class WtsExperienceDiagnosticsData {
@@ -182,6 +190,31 @@ class WtsExperienceData {
   double delaySeconds;
   double? autoCloseSeconds;
   String? assetUrl;
+}
+
+class WtsExperiencePresentationHandleData {
+  WtsExperiencePresentationHandleData({required this.exposureId});
+  String exposureId;
+}
+
+class WtsExperienceManualPresentationData {
+  WtsExperienceManualPresentationData({
+    required this.experience,
+    required this.handle,
+  });
+  WtsExperienceData experience;
+  WtsExperiencePresentationHandleData handle;
+}
+
+class WtsExperienceLifecycleOutcomeData {
+  WtsExperienceLifecycleOutcomeData({
+    required this.accepted,
+    required this.idempotent,
+    this.code,
+  });
+  bool accepted;
+  bool idempotent;
+  String? code;
 }
 
 class WtsTestSessionCheckData {
@@ -286,7 +319,7 @@ class WtsTestSessionProbeRunData {
 
 @FlutterApi()
 abstract class WtsFlutterApi {
-  void onExperienceAvailable(WtsExperienceData experience);
+  void onExperienceAvailable(WtsExperienceManualPresentationData presentation);
 
   void onExperienceAction(
     WtsExperienceData experience,
@@ -342,6 +375,29 @@ abstract class WtsHostApi {
 
   @async
   WtsExperienceDiagnosticsData getExperienceDiagnostics();
+
+  @async
+  WtsExperienceLifecycleOutcomeData acknowledgeExperienceRender(
+    WtsExperiencePresentationHandleData handle,
+  );
+
+  @async
+  WtsExperienceLifecycleOutcomeData acknowledgeExperienceImpression(
+    WtsExperiencePresentationHandleData handle,
+  );
+
+  @async
+  WtsExperienceLifecycleOutcomeData reportExperienceAction(
+    WtsExperiencePresentationHandleData handle,
+    String actionId,
+  );
+
+  @async
+  WtsExperienceLifecycleOutcomeData dismissExperience(
+    WtsExperiencePresentationHandleData handle,
+    String reason,
+    String? failureCode,
+  );
 
   @async
   WtsTestSessionJoinData joinTestSession(String pairing);

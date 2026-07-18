@@ -71,6 +71,23 @@ void main() {
     expect(diagnostics.testDeviceToken, 'test-device-token');
   });
 
+  test('forwards the Experience manifest verification key ring', () async {
+    await WtsSdk.configure(
+      appKey: 'public-app-key',
+      experiences: const WtsExperienceOptions(
+        enabled: true,
+        manifestVerificationKeys: <String, String>{
+          'experience-key-2026-07': 'base64-spki-der',
+        },
+      ),
+    );
+
+    expect(
+      platform.configuredExperiences?.manifestVerificationKeys,
+      <String, String>{'experience-key-2026-07': 'base64-spki-der'},
+    );
+  });
+
   test('forwards a canonical pairing URL unchanged after trimming', () async {
     const String canonicalPairing =
         'https://notiword.wts.is/_wts/test/pair?pairing=pairing-token';
@@ -285,6 +302,232 @@ void main() {
         <String, Object?>{'grant': 'test-grant'});
   });
 
+  test('Pigeon bridge maps manual Experience lifecycle acknowledgements',
+      () async {
+    final dynamic messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    final pigeon.WtsExperiencePresentationHandleData handle =
+        pigeon.WtsExperiencePresentationHandleData(exposureId: 'exposure-1');
+    final pigeon.WtsHostApi api = pigeon.WtsHostApi();
+
+    messenger.setMockDecodedMessageHandler<Object?>(
+      _testSessionChannel('acknowledgeExperienceRender'),
+      (Object? message) async {
+        expect(message, <Object?>[handle]);
+        return <Object?>[
+          pigeon.WtsExperienceLifecycleOutcomeData(
+            accepted: true,
+            idempotent: false,
+          ),
+        ];
+      },
+    );
+    messenger.setMockDecodedMessageHandler<Object?>(
+      _testSessionChannel('acknowledgeExperienceImpression'),
+      (Object? message) async {
+        expect(message, <Object?>[handle]);
+        return <Object?>[
+          pigeon.WtsExperienceLifecycleOutcomeData(
+            accepted: true,
+            idempotent: true,
+          ),
+        ];
+      },
+    );
+    messenger.setMockDecodedMessageHandler<Object?>(
+      _testSessionChannel('reportExperienceAction'),
+      (Object? message) async {
+        expect(message, <Object?>[handle, 'primary-cta']);
+        return <Object?>[
+          pigeon.WtsExperienceLifecycleOutcomeData(
+            accepted: true,
+            idempotent: false,
+          ),
+        ];
+      },
+    );
+    messenger.setMockDecodedMessageHandler<Object?>(
+      _testSessionChannel('dismissExperience'),
+      (Object? message) async {
+        expect(message, <Object?>[handle, 'renderFailed', 'RENDER_EXCEPTION']);
+        return <Object?>[
+          pigeon.WtsExperienceLifecycleOutcomeData(
+            accepted: false,
+            idempotent: false,
+            code: 'RENDER_FAILED',
+          ),
+        ];
+      },
+    );
+
+    expect((await api.acknowledgeExperienceRender(handle)).accepted, isTrue);
+    expect(
+        (await api.acknowledgeExperienceImpression(handle)).idempotent, isTrue);
+    expect(
+      (await api.reportExperienceAction(handle, 'primary-cta')).accepted,
+      isTrue,
+    );
+    final pigeon.WtsExperienceLifecycleOutcomeData dismissal =
+        await api.dismissExperience(handle, 'renderFailed', 'RENDER_EXCEPTION');
+    expect(dismissal.code, 'RENDER_FAILED');
+  });
+
+  test(
+      'manual availability exposes only an opaque handle and never starts native automatic presentation',
+      () async {
+    final dynamic messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    int automaticPresentCalls = 0;
+    int automaticDismissCalls = 0;
+    final pigeon.WtsExperiencePresentationHandleData rawHandle =
+        pigeon.WtsExperiencePresentationHandleData(exposureId: 'exposure-1');
+
+    messenger.setMockDecodedMessageHandler<Object?>(
+      _testSessionChannel('configure'),
+      (Object? message) async {
+        final pigeon.WtsConfigurationData configuration =
+            (message! as List<Object?>).single! as pigeon.WtsConfigurationData;
+        expect(configuration.experienceRenderMode, 'manual');
+        return <Object?>[null];
+      },
+    );
+    messenger.setMockDecodedMessageHandler<Object?>(
+      _testSessionChannel('presentNextExperience'),
+      (Object? message) async {
+        automaticPresentCalls += 1;
+        return <Object?>[false];
+      },
+    );
+    messenger.setMockDecodedMessageHandler<Object?>(
+      _testSessionChannel('dismissCurrentExperience'),
+      (Object? message) async {
+        automaticDismissCalls += 1;
+        return <Object?>[false];
+      },
+    );
+    messenger.setMockDecodedMessageHandler<Object?>(
+      _testSessionChannel('acknowledgeExperienceRender'),
+      (Object? message) async {
+        expect(message, <Object?>[rawHandle]);
+        return <Object?>[
+          pigeon.WtsExperienceLifecycleOutcomeData(
+            accepted: true,
+            idempotent: false,
+          ),
+        ];
+      },
+    );
+    messenger.setMockDecodedMessageHandler<Object?>(
+      _testSessionChannel('acknowledgeExperienceImpression'),
+      (Object? message) async {
+        expect(message, <Object?>[rawHandle]);
+        return <Object?>[
+          pigeon.WtsExperienceLifecycleOutcomeData(
+            accepted: true,
+            idempotent: true,
+          ),
+        ];
+      },
+    );
+    messenger.setMockDecodedMessageHandler<Object?>(
+      _testSessionChannel('reportExperienceAction'),
+      (Object? message) async {
+        expect(message, <Object?>[rawHandle, 'primary-cta']);
+        return <Object?>[
+          pigeon.WtsExperienceLifecycleOutcomeData(
+            accepted: true,
+            idempotent: false,
+          ),
+        ];
+      },
+    );
+    messenger.setMockDecodedMessageHandler<Object?>(
+      _testSessionChannel('dismissExperience'),
+      (Object? message) async {
+        expect(
+            message, <Object?>[rawHandle, 'renderFailed', 'RENDER_EXCEPTION']);
+        return <Object?>[
+          pigeon.WtsExperienceLifecycleOutcomeData(
+            accepted: false,
+            idempotent: false,
+            code: 'RENDER_FAILED',
+          ),
+        ];
+      },
+    );
+
+    WtsSdk.platform = PigeonWtsPlatform();
+    await WtsSdk.configure(
+      appKey: 'public-app-key',
+      experiences: const WtsExperienceOptions(
+        enabled: true,
+        renderMode: WtsExperienceRenderMode.manual,
+      ),
+    );
+    WtsExperienceManualPresentation? presentation;
+    final WtsUnsubscribe unsubscribe = WtsSdk.onExperienceAvailable(
+      (WtsExperienceManualPresentation value) => presentation = value,
+    );
+
+    await messenger.handlePlatformMessage(
+      'dev.flutter.pigeon.wts_sdk.WtsFlutterApi.onExperienceAvailable',
+      pigeon.WtsFlutterApi.pigeonChannelCodec.encodeMessage(<Object?>[
+        pigeon.WtsExperienceManualPresentationData(
+          experience: pigeon.WtsExperienceData(
+            campaignId: 'campaign-checkout',
+            campaignVersionId: 'version-1',
+            assignmentId: 'assignment-1',
+            variantId: 'variant-a',
+            exposureId: 'exposure-1',
+            placement: 'modal',
+            priority: 10,
+            translations: <pigeon.WtsExperienceTranslationData>[],
+            closeable: true,
+            themePreset: 'default',
+            delaySeconds: 0,
+          ),
+          handle: rawHandle,
+        ),
+      ]),
+      (ByteData? _) {},
+    );
+
+    final WtsExperienceManualPresentation received = presentation!;
+    expect(received.experience, isA<WtsExperienceManualContent>());
+    expect(received.experience.campaignId, 'campaign-checkout');
+    expect(
+      () => (received.experience as dynamic).exposureId,
+      throwsNoSuchMethodError,
+    );
+    expect(
+      () => (received.handle as dynamic).exposureId,
+      throwsNoSuchMethodError,
+    );
+    expect((await WtsSdk.acknowledgeExperienceRender(received.handle)).accepted,
+        isTrue);
+    expect(
+      (await WtsSdk.acknowledgeExperienceImpression(received.handle))
+          .idempotent,
+      isTrue,
+    );
+    expect(
+      (await WtsSdk.reportExperienceAction(received.handle, 'primary-cta'))
+          .accepted,
+      isTrue,
+    );
+    expect(
+      (await WtsSdk.failExperiencePresentation(
+        received.handle,
+        'RENDER_EXCEPTION',
+      ))
+          .code,
+      'RENDER_FAILED',
+    );
+    expect(automaticPresentCalls, 0);
+    expect(automaticDismissCalls, 0);
+    unsubscribe();
+  });
+
   test('handle errors retain the original web fallback URL', () async {
     platform.handleError = PlatformException(code: 'TIMEOUT');
     final Uri url = Uri.parse('https://demo.links.wts.is/summer');
@@ -336,6 +579,7 @@ class FakePlatform implements WtsPlatform {
   String? lastScreen;
   String? lastPairing;
   String? lastProbeUrl;
+  WtsExperienceOptions? configuredExperiences;
   bool _testExperienceDecisionReady = false;
   final List<String> testExperienceInteractions = <String>[];
 
@@ -347,6 +591,7 @@ class FakePlatform implements WtsPlatform {
     WtsExperienceOptions experiences,
   ) async {
     if (configureError case final Object error) throw error;
+    configuredExperiences = experiences;
   }
 
   @override
@@ -417,6 +662,45 @@ class FakePlatform implements WtsPlatform {
         queued: 0,
         presenting: false,
         testDeviceToken: 'test-device-token',
+      );
+
+  @override
+  Future<WtsExperienceLifecycleOutcome> acknowledgeExperienceRender(
+    WtsExperiencePresentationHandle handle,
+  ) async =>
+      const WtsExperienceLifecycleOutcome(
+        accepted: true,
+        idempotent: false,
+      );
+
+  @override
+  Future<WtsExperienceLifecycleOutcome> acknowledgeExperienceImpression(
+    WtsExperiencePresentationHandle handle,
+  ) async =>
+      const WtsExperienceLifecycleOutcome(
+        accepted: true,
+        idempotent: false,
+      );
+
+  @override
+  Future<WtsExperienceLifecycleOutcome> reportExperienceAction(
+    WtsExperiencePresentationHandle handle,
+    String actionId,
+  ) async =>
+      const WtsExperienceLifecycleOutcome(
+        accepted: true,
+        idempotent: false,
+      );
+
+  @override
+  Future<WtsExperienceLifecycleOutcome> dismissExperience(
+    WtsExperiencePresentationHandle handle,
+    WtsExperienceDismissReason reason,
+    String? failureCode,
+  ) async =>
+      const WtsExperienceLifecycleOutcome(
+        accepted: true,
+        idempotent: false,
       );
 
   @override

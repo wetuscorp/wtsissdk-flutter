@@ -39,14 +39,19 @@ public final class WtsSdkPlugin: NSObject, FlutterPlugin, WtsHostApi {
                     allowedCallbackKeys: Set(configuration.allowedCallbackKeys),
                     allowedDeepLinkHosts: Set(configuration.allowedDeepLinkHosts),
                     allowedDeepLinkSchemes: Set(configuration.allowedDeepLinkSchemes),
-                    allowedWebOrigins: Set(configuration.allowedWebOrigins)
+                    allowedWebOrigins: Set(configuration.allowedWebOrigins),
+                    manifestVerificationKeys: Dictionary(
+                        uniqueKeysWithValues: configuration.manifestVerificationKeys.map {
+                            ($0.kid, $0.value)
+                        }
+                    )
                 )
                 try await WtsSDK.shared.configure(appKey: configuration.appKey, options: options)
-                await WtsSDK.shared.onExperienceAvailable { [weak self] experience in
+                await WtsSDK.shared.onExperienceAvailable { [weak self] presentation in
                     guard let self else { return }
                     DispatchQueue.main.async {
                         self.flutterApi.onExperienceAvailable(
-                            experience: experience.toData()
+                            presentation: presentation.toData()
                         ) { _ in }
                     }
                 }
@@ -257,6 +262,81 @@ public final class WtsSdkPlugin: NSObject, FlutterPlugin, WtsHostApi {
         }
     }
 
+    func acknowledgeExperienceRender(
+        handle: WtsExperiencePresentationHandleData,
+        completion: @escaping (Result<WtsExperienceLifecycleOutcomeData, Error>) -> Void
+    ) {
+        Task {
+            completion(
+                .success(
+                    (await WtsSDK.shared.acknowledgeExperienceRender(handle.toNative())).toData()
+                )
+            )
+        }
+    }
+
+    func acknowledgeExperienceImpression(
+        handle: WtsExperiencePresentationHandleData,
+        completion: @escaping (Result<WtsExperienceLifecycleOutcomeData, Error>) -> Void
+    ) {
+        Task {
+            completion(
+                .success(
+                    (await WtsSDK.shared.acknowledgeExperienceImpression(handle.toNative())).toData()
+                )
+            )
+        }
+    }
+
+    func reportExperienceAction(
+        handle: WtsExperiencePresentationHandleData,
+        actionId: String,
+        completion: @escaping (Result<WtsExperienceLifecycleOutcomeData, Error>) -> Void
+    ) {
+        Task {
+            completion(
+                .success(
+                    (await WtsSDK.shared.reportExperienceAction(
+                        handle.toNative(),
+                        actionId: actionId
+                    )).toData()
+                )
+            )
+        }
+    }
+
+    func dismissExperience(
+        handle: WtsExperiencePresentationHandleData,
+        reason: String,
+        failureCode: String?,
+        completion: @escaping (Result<WtsExperienceLifecycleOutcomeData, Error>) -> Void
+    ) {
+        let parsedReason: WtsExperienceDismissReason
+        switch reason {
+        case "dismissed": parsedReason = .dismissed
+        case "autoClosed": parsedReason = .autoClosed
+        case "renderFailed": parsedReason = .renderFailed
+        default:
+            completion(.failure(PigeonError(
+                code: "INVALID_EXPERIENCE_DISMISSAL_REASON",
+                message: "Unsupported Experience dismissal reason.",
+                details: nil
+            )))
+            return
+        }
+        Task {
+            completion(
+                .success(
+                    (await WtsSDK.shared.dismissExperience(
+                        handle.toNative(),
+                        reason: parsedReason,
+                        failureCode: failureCode
+                    )).toData()
+                )
+            )
+        }
+    }
+
     func joinTestSession(
         pairing: String,
         completion: @escaping (Result<WtsTestSessionJoinData, Error>) -> Void
@@ -380,6 +460,37 @@ private extension WtsExperience {
             delaySeconds: content.delaySeconds,
             autoCloseSeconds: content.autoCloseSeconds,
             assetUrl: assetURL?.absoluteString
+        )
+    }
+}
+
+private extension WtsExperienceManualPresentation {
+    func toData() -> WtsExperienceManualPresentationData {
+        WtsExperienceManualPresentationData(
+            experience: experience.toData(),
+            handle: handle.toData()
+        )
+    }
+}
+
+private extension WtsExperiencePresentationHandle {
+    func toData() -> WtsExperiencePresentationHandleData {
+        WtsExperiencePresentationHandleData(exposureId: exposureId)
+    }
+}
+
+private extension WtsExperiencePresentationHandleData {
+    func toNative() -> WtsExperiencePresentationHandle {
+        WtsExperiencePresentationHandle(exposureId: exposureId)
+    }
+}
+
+private extension WtsExperienceLifecycleOutcome {
+    func toData() -> WtsExperienceLifecycleOutcomeData {
+        WtsExperienceLifecycleOutcomeData(
+            accepted: accepted,
+            idempotent: idempotent,
+            code: code
         )
     }
 }

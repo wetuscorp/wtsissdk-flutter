@@ -8,7 +8,7 @@ let nativeSdkDependency: Package.Dependency = if let nativeSdkPath {
 } else {
     .package(
         url: "https://github.com/wetuscorp/wtsissdk-swift.git",
-        exact: "0.3.0-alpha.1"
+        exact: "0.4.0-alpha.1"
     )
 }
 
