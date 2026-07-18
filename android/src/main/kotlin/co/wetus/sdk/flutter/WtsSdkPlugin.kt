@@ -6,7 +6,11 @@ import co.wetus.sdk.WtsDeepLink
 import co.wetus.sdk.WtsExperienceConsent
 import co.wetus.sdk.WtsExperience
 import co.wetus.sdk.WtsExperienceAction
+import co.wetus.sdk.WtsExperienceDismissReason
+import co.wetus.sdk.WtsExperienceLifecycleOutcome
+import co.wetus.sdk.WtsExperienceManualPresentation
 import co.wetus.sdk.WtsExperienceOptions
+import co.wetus.sdk.WtsExperiencePresentationHandle
 import co.wetus.sdk.WtsExperienceRenderMode
 import co.wetus.sdk.WtsOptions
 import co.wetus.sdk.WtsRevenue
@@ -77,12 +81,14 @@ class WtsSdkPlugin : FlutterPlugin, WtsHostApi {
                         allowedDeepLinkHosts = configuration.allowedDeepLinkHosts.toSet(),
                         allowedDeepLinkSchemes = configuration.allowedDeepLinkSchemes.toSet(),
                         allowedWebOrigins = configuration.allowedWebOrigins.toSet(),
+                        manifestVerificationKeys = configuration.manifestVerificationKeys
+                            .associate { it.kid to it.value },
                     ),
                 ),
             )
-            sdk.onExperienceAvailable { experience ->
+            sdk.onExperienceAvailable { presentation ->
                 scope.launch {
-                    flutterApi?.onExperienceAvailable(experience.toData()) {}
+                    flutterApi?.onExperienceAvailable(presentation.toData()) {}
                 }
             }
             sdk.onExperienceAction { experience, action ->
@@ -218,6 +224,41 @@ class WtsSdkPlugin : FlutterPlugin, WtsHostApi {
         )
     }
 
+    override fun acknowledgeExperienceRender(
+        handle: WtsExperiencePresentationHandleData,
+        callback: (Result<WtsExperienceLifecycleOutcomeData>) -> Unit,
+    ) = launch(callback) {
+        WtsSdk.shared().acknowledgeExperienceRender(handle.toNative()).toData()
+    }
+
+    override fun acknowledgeExperienceImpression(
+        handle: WtsExperiencePresentationHandleData,
+        callback: (Result<WtsExperienceLifecycleOutcomeData>) -> Unit,
+    ) = launch(callback) {
+        WtsSdk.shared().acknowledgeExperienceImpression(handle.toNative()).toData()
+    }
+
+    override fun reportExperienceAction(
+        handle: WtsExperiencePresentationHandleData,
+        actionId: String,
+        callback: (Result<WtsExperienceLifecycleOutcomeData>) -> Unit,
+    ) = launch(callback) {
+        WtsSdk.shared().reportExperienceAction(handle.toNative(), actionId).toData()
+    }
+
+    override fun dismissExperience(
+        handle: WtsExperiencePresentationHandleData,
+        reason: String,
+        failureCode: String?,
+        callback: (Result<WtsExperienceLifecycleOutcomeData>) -> Unit,
+    ) = launch(callback) {
+        WtsSdk.shared().dismissExperience(
+            handle.toNative(),
+            reason.toNative(),
+            failureCode,
+        ).toData()
+    }
+
     override fun joinTestSession(
         pairing: String,
         callback: (Result<WtsTestSessionJoinData>) -> Unit,
@@ -321,7 +362,6 @@ class WtsSdkPlugin : FlutterPlugin, WtsHostApi {
         campaignVersionId = campaignVersionId,
         assignmentId = assignmentId,
         variantId = variantId,
-        exposureId = exposureId,
         placement = placement.name.lowercase(),
         priority = priority.toLong(),
         translations = content.translations.map { (locale, value) ->
@@ -339,6 +379,32 @@ class WtsSdkPlugin : FlutterPlugin, WtsHostApi {
         autoCloseSeconds = content.autoCloseSeconds,
         assetUrl = assetUrl,
     )
+
+    private fun WtsExperienceManualPresentation.toData() =
+        WtsExperienceManualPresentationData(
+            experience = experience.toData(),
+            handle = handle.toData(),
+        )
+
+    private fun WtsExperiencePresentationHandle.toData() =
+        WtsExperiencePresentationHandleData(exposureId = exposureId)
+
+    private fun WtsExperiencePresentationHandleData.toNative() =
+        WtsExperiencePresentationHandle.fromExposureId(exposureId)
+
+    private fun WtsExperienceLifecycleOutcome.toData() =
+        WtsExperienceLifecycleOutcomeData(
+            accepted = accepted,
+            idempotent = idempotent,
+            code = code,
+        )
+
+    private fun String.toNative(): WtsExperienceDismissReason = when (this) {
+        "dismissed" -> WtsExperienceDismissReason.DISMISSED
+        "autoClosed" -> WtsExperienceDismissReason.AUTO_CLOSED
+        "renderFailed" -> WtsExperienceDismissReason.RENDER_FAILED
+        else -> throw IllegalArgumentException("Unsupported Experience dismissal reason.")
+    }
 
     private fun WtsExperienceAction.toData() = WtsExperienceActionData(
         id = id,

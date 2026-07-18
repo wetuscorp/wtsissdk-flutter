@@ -2,19 +2,21 @@
 
 Official Flutter wrapper for the wts.is Swift and Android SDKs. Generated Pigeon channels preserve scalar parameter types and revenue precision; networking, install identity and event persistence stay in the native cores.
 
-> `0.3.0-alpha.1` source line · Mobile Protocol V3 + Identity V1 + Experiences V1 + SDK Test Session V1 · Flutter 3.35+ · iOS 15+ · Android API 23+
+> `0.4.0-alpha.1` · Mobile Protocol V3 + Identity V1 + Experiences V1 + SDK Test Session V1 · Flutter 3.35+ · iOS 15+ · Android API 23+
 
-> **Release note:** SDK Test & Validate APIs below require a matching published
-> `wts_sdk` release **and** matching published Swift/Android core releases.
-> This document does not claim that `0.3.0-alpha.1` is already published on
-> pub.dev or either native registry.
+> **Native-core compatibility:** `wts_sdk 0.4.0-alpha.1` pins Android
+> `co.wetus:wts-sdk:0.4.0-alpha.1` and iOS `WtsSDK 0.4.0-alpha.1` exactly.
+> Keep these companion native cores on the same version; do not override them
+> to an earlier or later release.
 
 ## Install
 
 ```yaml
 dependencies:
-  wts_sdk: <matching-published-version>
+  wts_sdk: 0.4.0-alpha.1
 ```
+
+Then run `flutter pub get`.
 
 ## Configure and handle links
 
@@ -79,6 +81,9 @@ await WtsSdk.configure(
     allowedDeepLinkHosts: {'go.example.com'},
     allowedDeepLinkSchemes: {'example'},
     allowedWebOrigins: {'https://www.example.com'},
+    manifestVerificationKeys: {
+      'experience-key-2026-07': 'BASE64_SPKI_DER_ED25519_PUBLIC_KEY',
+    },
   ),
 );
 
@@ -89,13 +94,46 @@ Use `personalized` only after profile consent. `pending` performs no
 Experience request and `denied` clears local Experience state. Rendering,
 decision networking, persistent interaction retry and visibility-qualified
 impressions remain in the official native cores; Flutter does not duplicate
-the protocol. Manual presentation is available through
-`presentNextExperience()`, `dismissCurrentExperience()` and
-`getExperienceDiagnostics()`. Typed `onExperienceAvailable` and
-`onExperienceAction` subscriptions carry native decisions and safe actions to
-Dart without a second HTTP implementation.
+the protocol. Retrieve the public key ring from the authenticated workspace
+API, `GET /api/v1/organizations/:organizationId/experiences/manifest-verification-keys`,
+and pin the returned `kid` → base64 SPKI DER values in your app configuration.
+Never derive these values from, or place, server signing secrets in a client.
+The native core ignores the unsigned outer manifest and verifies its signed
+payload before it is parsed.
 
-For an unpublished device test, copy
+`automatic` rendering stays in the native core. For `manual`, replace the
+configuration above with `renderMode: WtsExperienceRenderMode.manual` before
+registering a handler. The SDK then emits
+typed renderable content and one opaque SDK-issued presentation handle only
+when a candidate is available. Delivery identifiers never enter public
+Experience payloads; the SDK keeps the correlation required for manual
+lifecycle acknowledgements inside the opaque handle. The host owns UI
+presentation and must acknowledge the actual lifecycle:
+
+```dart
+final unsubscribe = WtsSdk.onExperienceAvailable((presentation) async {
+  final render = await WtsSdk.acknowledgeExperienceRender(presentation.handle);
+  if (!render.accepted) return;
+
+  final result = await showYourExperienceUi(presentation.experience);
+  if (result.wasVisibleForOneSecond) {
+    await WtsSdk.acknowledgeExperienceImpression(presentation.handle);
+  }
+  if (result.actionId != null) {
+    await WtsSdk.reportExperienceAction(presentation.handle, result.actionId!);
+  } else {
+    await WtsSdk.dismissExperience(presentation.handle);
+  }
+});
+```
+
+Use `failExperiencePresentation(handle, failureCode)` when the manual renderer
+cannot present the candidate. Do not persist or reconstruct presentation
+handles. `presentNextExperience()` and `dismissCurrentExperience()` are for
+automatic rendering; manual mode never invokes native presentation or emits a
+second availability callback.
+
+For a dashboard test device, copy
 `(await WtsSdk.getExperienceDiagnostics()).testDeviceToken` into the dashboard
 test panel for the matching Mobile App. The random source-scoped token contains
 no install, user, or profile identifier, and test traffic is excluded from

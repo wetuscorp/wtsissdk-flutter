@@ -475,6 +475,7 @@ class WtsConfigurationData {
     required this.allowedDeepLinkHosts,
     required this.allowedDeepLinkSchemes,
     required this.allowedWebOrigins,
+    required this.manifestVerificationKeys,
   });
 
   String appKey;
@@ -497,6 +498,8 @@ class WtsConfigurationData {
 
   List<String> allowedWebOrigins;
 
+  List<WtsManifestVerificationKeyData> manifestVerificationKeys;
+
   List<Object?> _toList() {
     return <Object?>[
       appKey,
@@ -509,6 +512,7 @@ class WtsConfigurationData {
       allowedDeepLinkHosts,
       allowedDeepLinkSchemes,
       allowedWebOrigins,
+      manifestVerificationKeys,
     ];
   }
 
@@ -529,6 +533,8 @@ class WtsConfigurationData {
       allowedDeepLinkHosts: (result[7]! as List<Object?>).cast<String>(),
       allowedDeepLinkSchemes: (result[8]! as List<Object?>).cast<String>(),
       allowedWebOrigins: (result[9]! as List<Object?>).cast<String>(),
+      manifestVerificationKeys:
+          (result[10]! as List<Object?>).cast<WtsManifestVerificationKeyData>(),
     );
   }
 
@@ -550,7 +556,55 @@ class WtsConfigurationData {
         _deepEquals(allowedCallbackKeys, other.allowedCallbackKeys) &&
         _deepEquals(allowedDeepLinkHosts, other.allowedDeepLinkHosts) &&
         _deepEquals(allowedDeepLinkSchemes, other.allowedDeepLinkSchemes) &&
-        _deepEquals(allowedWebOrigins, other.allowedWebOrigins);
+        _deepEquals(allowedWebOrigins, other.allowedWebOrigins) &&
+        _deepEquals(manifestVerificationKeys, other.manifestVerificationKeys);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+}
+
+class WtsManifestVerificationKeyData {
+  WtsManifestVerificationKeyData({
+    required this.kid,
+    required this.value,
+  });
+
+  String kid;
+
+  String value;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      kid,
+      value,
+    ];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static WtsManifestVerificationKeyData decode(Object result) {
+    result as List<Object?>;
+    return WtsManifestVerificationKeyData(
+      kid: result[0]! as String,
+      value: result[1]! as String,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! WtsManifestVerificationKeyData ||
+        other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(kid, other.kid) && _deepEquals(value, other.value);
   }
 
   @override
@@ -761,7 +815,6 @@ class WtsExperienceData {
     required this.campaignVersionId,
     required this.assignmentId,
     required this.variantId,
-    required this.exposureId,
     required this.placement,
     required this.priority,
     required this.translations,
@@ -779,8 +832,6 @@ class WtsExperienceData {
   String assignmentId;
 
   String variantId;
-
-  String exposureId;
 
   String placement;
 
@@ -804,7 +855,6 @@ class WtsExperienceData {
       campaignVersionId,
       assignmentId,
       variantId,
-      exposureId,
       placement,
       priority,
       translations,
@@ -827,16 +877,15 @@ class WtsExperienceData {
       campaignVersionId: result[1]! as String,
       assignmentId: result[2]! as String,
       variantId: result[3]! as String,
-      exposureId: result[4]! as String,
-      placement: result[5]! as String,
-      priority: result[6]! as int,
+      placement: result[4]! as String,
+      priority: result[5]! as int,
       translations:
-          (result[7]! as List<Object?>).cast<WtsExperienceTranslationData>(),
-      closeable: result[8]! as bool,
-      themePreset: result[9]! as String,
-      delaySeconds: result[10]! as double,
-      autoCloseSeconds: result[11] as double?,
-      assetUrl: result[12] as String?,
+          (result[6]! as List<Object?>).cast<WtsExperienceTranslationData>(),
+      closeable: result[7]! as bool,
+      themePreset: result[8]! as String,
+      delaySeconds: result[9]! as double,
+      autoCloseSeconds: result[10] as double?,
+      assetUrl: result[11] as String?,
     );
   }
 
@@ -853,7 +902,6 @@ class WtsExperienceData {
         _deepEquals(campaignVersionId, other.campaignVersionId) &&
         _deepEquals(assignmentId, other.assignmentId) &&
         _deepEquals(variantId, other.variantId) &&
-        _deepEquals(exposureId, other.exposureId) &&
         _deepEquals(placement, other.placement) &&
         _deepEquals(priority, other.priority) &&
         _deepEquals(translations, other.translations) &&
@@ -862,6 +910,150 @@ class WtsExperienceData {
         _deepEquals(delaySeconds, other.delaySeconds) &&
         _deepEquals(autoCloseSeconds, other.autoCloseSeconds) &&
         _deepEquals(assetUrl, other.assetUrl);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+}
+
+class WtsExperiencePresentationHandleData {
+  WtsExperiencePresentationHandleData({
+    required this.exposureId,
+  });
+
+  String exposureId;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      exposureId,
+    ];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static WtsExperiencePresentationHandleData decode(Object result) {
+    result as List<Object?>;
+    return WtsExperiencePresentationHandleData(
+      exposureId: result[0]! as String,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! WtsExperiencePresentationHandleData ||
+        other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(exposureId, other.exposureId);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+}
+
+class WtsExperienceManualPresentationData {
+  WtsExperienceManualPresentationData({
+    required this.experience,
+    required this.handle,
+  });
+
+  WtsExperienceData experience;
+
+  WtsExperiencePresentationHandleData handle;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      experience,
+      handle,
+    ];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static WtsExperienceManualPresentationData decode(Object result) {
+    result as List<Object?>;
+    return WtsExperienceManualPresentationData(
+      experience: result[0]! as WtsExperienceData,
+      handle: result[1]! as WtsExperiencePresentationHandleData,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! WtsExperienceManualPresentationData ||
+        other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(experience, other.experience) &&
+        _deepEquals(handle, other.handle);
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => _deepHash(<Object?>[runtimeType, ..._toList()]);
+}
+
+class WtsExperienceLifecycleOutcomeData {
+  WtsExperienceLifecycleOutcomeData({
+    required this.accepted,
+    required this.idempotent,
+    this.code,
+  });
+
+  bool accepted;
+
+  bool idempotent;
+
+  String? code;
+
+  List<Object?> _toList() {
+    return <Object?>[
+      accepted,
+      idempotent,
+      code,
+    ];
+  }
+
+  Object encode() {
+    return _toList();
+  }
+
+  static WtsExperienceLifecycleOutcomeData decode(Object result) {
+    result as List<Object?>;
+    return WtsExperienceLifecycleOutcomeData(
+      accepted: result[0]! as bool,
+      idempotent: result[1]! as bool,
+      code: result[2] as String?,
+    );
+  }
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) {
+    if (other is! WtsExperienceLifecycleOutcomeData ||
+        other.runtimeType != runtimeType) {
+      return false;
+    }
+    if (identical(this, other)) {
+      return true;
+    }
+    return _deepEquals(accepted, other.accepted) &&
+        _deepEquals(idempotent, other.idempotent) &&
+        _deepEquals(code, other.code);
   }
 
   @override
@@ -1324,35 +1516,47 @@ class _PigeonCodec extends StandardMessageCodec {
     } else if (value is WtsConfigurationData) {
       buffer.putUint8(136);
       writeValue(buffer, value.encode());
-    } else if (value is WtsExperienceDiagnosticsData) {
+    } else if (value is WtsManifestVerificationKeyData) {
       buffer.putUint8(137);
       writeValue(buffer, value.encode());
-    } else if (value is WtsExperienceActionData) {
+    } else if (value is WtsExperienceDiagnosticsData) {
       buffer.putUint8(138);
       writeValue(buffer, value.encode());
-    } else if (value is WtsExperienceTranslationData) {
+    } else if (value is WtsExperienceActionData) {
       buffer.putUint8(139);
       writeValue(buffer, value.encode());
-    } else if (value is WtsExperienceData) {
+    } else if (value is WtsExperienceTranslationData) {
       buffer.putUint8(140);
       writeValue(buffer, value.encode());
-    } else if (value is WtsTestSessionCheckData) {
+    } else if (value is WtsExperienceData) {
       buffer.putUint8(141);
       writeValue(buffer, value.encode());
-    } else if (value is WtsTestSessionJoinData) {
+    } else if (value is WtsExperiencePresentationHandleData) {
       buffer.putUint8(142);
       writeValue(buffer, value.encode());
-    } else if (value is WtsTestSessionDiagnosticsData) {
+    } else if (value is WtsExperienceManualPresentationData) {
       buffer.putUint8(143);
       writeValue(buffer, value.encode());
-    } else if (value is WtsTestSessionProbeLinkData) {
+    } else if (value is WtsExperienceLifecycleOutcomeData) {
       buffer.putUint8(144);
       writeValue(buffer, value.encode());
-    } else if (value is WtsTestSessionProbeData) {
+    } else if (value is WtsTestSessionCheckData) {
       buffer.putUint8(145);
       writeValue(buffer, value.encode());
-    } else if (value is WtsTestSessionProbeRunData) {
+    } else if (value is WtsTestSessionJoinData) {
       buffer.putUint8(146);
+      writeValue(buffer, value.encode());
+    } else if (value is WtsTestSessionDiagnosticsData) {
+      buffer.putUint8(147);
+      writeValue(buffer, value.encode());
+    } else if (value is WtsTestSessionProbeLinkData) {
+      buffer.putUint8(148);
+      writeValue(buffer, value.encode());
+    } else if (value is WtsTestSessionProbeData) {
+      buffer.putUint8(149);
+      writeValue(buffer, value.encode());
+    } else if (value is WtsTestSessionProbeRunData) {
+      buffer.putUint8(150);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -1380,24 +1584,32 @@ class _PigeonCodec extends StandardMessageCodec {
       case 136:
         return WtsConfigurationData.decode(readValue(buffer)!);
       case 137:
-        return WtsExperienceDiagnosticsData.decode(readValue(buffer)!);
+        return WtsManifestVerificationKeyData.decode(readValue(buffer)!);
       case 138:
-        return WtsExperienceActionData.decode(readValue(buffer)!);
+        return WtsExperienceDiagnosticsData.decode(readValue(buffer)!);
       case 139:
-        return WtsExperienceTranslationData.decode(readValue(buffer)!);
+        return WtsExperienceActionData.decode(readValue(buffer)!);
       case 140:
-        return WtsExperienceData.decode(readValue(buffer)!);
+        return WtsExperienceTranslationData.decode(readValue(buffer)!);
       case 141:
-        return WtsTestSessionCheckData.decode(readValue(buffer)!);
+        return WtsExperienceData.decode(readValue(buffer)!);
       case 142:
-        return WtsTestSessionJoinData.decode(readValue(buffer)!);
+        return WtsExperiencePresentationHandleData.decode(readValue(buffer)!);
       case 143:
-        return WtsTestSessionDiagnosticsData.decode(readValue(buffer)!);
+        return WtsExperienceManualPresentationData.decode(readValue(buffer)!);
       case 144:
-        return WtsTestSessionProbeLinkData.decode(readValue(buffer)!);
+        return WtsExperienceLifecycleOutcomeData.decode(readValue(buffer)!);
       case 145:
-        return WtsTestSessionProbeData.decode(readValue(buffer)!);
+        return WtsTestSessionCheckData.decode(readValue(buffer)!);
       case 146:
+        return WtsTestSessionJoinData.decode(readValue(buffer)!);
+      case 147:
+        return WtsTestSessionDiagnosticsData.decode(readValue(buffer)!);
+      case 148:
+        return WtsTestSessionProbeLinkData.decode(readValue(buffer)!);
+      case 149:
+        return WtsTestSessionProbeData.decode(readValue(buffer)!);
+      case 150:
         return WtsTestSessionProbeRunData.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
@@ -1408,7 +1620,7 @@ class _PigeonCodec extends StandardMessageCodec {
 abstract class WtsFlutterApi {
   static const MessageCodec<Object?> pigeonChannelCodec = _PigeonCodec();
 
-  void onExperienceAvailable(WtsExperienceData experience);
+  void onExperienceAvailable(WtsExperienceManualPresentationData presentation);
 
   void onExperienceAction(
       WtsExperienceData experience, WtsExperienceActionData action);
@@ -1430,10 +1642,10 @@ abstract class WtsFlutterApi {
       } else {
         pigeonVar_channel.setMessageHandler((Object? message) async {
           final List<Object?> args = message! as List<Object?>;
-          final WtsExperienceData arg_experience =
-              args[0]! as WtsExperienceData;
+          final WtsExperienceManualPresentationData arg_presentation =
+              args[0]! as WtsExperienceManualPresentationData;
           try {
-            api.onExperienceAvailable(arg_experience);
+            api.onExperienceAvailable(arg_presentation);
             return wrapResponse(empty: true);
           } on PlatformException catch (e) {
             return wrapResponse(error: e);
@@ -1756,6 +1968,92 @@ class WtsHostApi {
       isNullValid: false,
     );
     return pigeonVar_replyValue! as WtsExperienceDiagnosticsData;
+  }
+
+  Future<WtsExperienceLifecycleOutcomeData> acknowledgeExperienceRender(
+      WtsExperiencePresentationHandleData handle) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.wts_sdk.WtsHostApi.acknowledgeExperienceRender$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture =
+        pigeonVar_channel.send(<Object?>[handle]);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as WtsExperienceLifecycleOutcomeData;
+  }
+
+  Future<WtsExperienceLifecycleOutcomeData> acknowledgeExperienceImpression(
+      WtsExperiencePresentationHandleData handle) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.wts_sdk.WtsHostApi.acknowledgeExperienceImpression$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture =
+        pigeonVar_channel.send(<Object?>[handle]);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as WtsExperienceLifecycleOutcomeData;
+  }
+
+  Future<WtsExperienceLifecycleOutcomeData> reportExperienceAction(
+      WtsExperiencePresentationHandleData handle, String actionId) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.wts_sdk.WtsHostApi.reportExperienceAction$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture =
+        pigeonVar_channel.send(<Object?>[handle, actionId]);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as WtsExperienceLifecycleOutcomeData;
+  }
+
+  Future<WtsExperienceLifecycleOutcomeData> dismissExperience(
+      WtsExperiencePresentationHandleData handle,
+      String reason,
+      String? failureCode) async {
+    final pigeonVar_channelName =
+        'dev.flutter.pigeon.wts_sdk.WtsHostApi.dismissExperience$pigeonVar_messageChannelSuffix';
+    final pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final Future<Object?> pigeonVar_sendFuture =
+        pigeonVar_channel.send(<Object?>[handle, reason, failureCode]);
+    final pigeonVar_replyList = await pigeonVar_sendFuture as List<Object?>?;
+
+    final Object? pigeonVar_replyValue = _extractReplyValueOrThrow(
+      pigeonVar_replyList,
+      pigeonVar_channelName,
+      isNullValid: false,
+    );
+    return pigeonVar_replyValue! as WtsExperienceLifecycleOutcomeData;
   }
 
   Future<WtsTestSessionJoinData> joinTestSession(String pairing) async {
