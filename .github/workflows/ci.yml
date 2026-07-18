@@ -65,6 +65,7 @@ jobs:
         run: cd wts_sdk/example && flutter config --enable-swift-package-manager && flutter pub get && flutter build ios --simulator
         env:
           WTS_SDK_SWIFT_PATH: ${{ github.workspace }}/native-swift
+          WTS_SDK_SWIFT_POD_PATH: ${{ github.workspace }}/native-swift
       - name: Build with CocoaPods
         if: matrix.integration == 'cocoapods'
         run: cd wts_sdk/example && flutter config --no-enable-swift-package-manager && flutter pub get && flutter build ios --simulator
