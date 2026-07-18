@@ -257,6 +257,73 @@ public final class WtsSdkPlugin: NSObject, FlutterPlugin, WtsHostApi {
         }
     }
 
+    func joinTestSession(
+        pairing: String,
+        completion: @escaping (Result<WtsTestSessionJoinData, Error>) -> Void
+    ) {
+        Task {
+            do {
+                let result = await WtsSDK.shared.joinTestSession(
+                    try WtsTestSessionPairing.parse(pairing),
+                    sdkFamily: .flutter
+                )
+                completion(.success(result.toData()))
+            } catch { completion(.failure(platformError(error))) }
+        }
+    }
+
+    func leaveTestSession(completion: @escaping (Result<Bool, Error>) -> Void) {
+        Task { completion(.success(await WtsSDK.shared.leaveTestSession())) }
+    }
+
+    func getTestSessionDiagnostics(
+        completion: @escaping (Result<WtsTestSessionDiagnosticsData, Error>) -> Void
+    ) {
+        Task { completion(.success(await WtsSDK.shared.getTestSessionDiagnostics().toData())) }
+    }
+
+    func probeTestSessionUrl(
+        url: String,
+        completion: @escaping (Result<WtsTestSessionProbeData, Error>) -> Void
+    ) {
+        Task {
+            do {
+                guard let value = URL(string: url) else { throw WtsSDKError.invalidURL(fallbackURL: nil) }
+                completion(.success(try await WtsSDK.shared.probeTestSessionURL(value).toData()))
+            } catch { completion(.failure(platformError(error))) }
+        }
+    }
+
+    func runTestSessionProbes(
+        completion: @escaping (Result<WtsTestSessionProbeRunData, Error>) -> Void
+    ) {
+        Task {
+            do { completion(.success(try await WtsSDK.shared.runTestSessionProbes().toData())) }
+            catch { completion(.failure(platformError(error))) }
+        }
+    }
+
+    func reportTestSessionExperienceInteraction(
+        interaction: String,
+        completion: @escaping (Result<Bool, Error>) -> Void
+    ) {
+        Task {
+            let parsed: WtsTestSessionExperienceInteraction? = interaction == "impression"
+                ? WtsTestSessionExperienceInteraction.impression
+                : interaction == "action" ? .action : nil
+            guard let value = parsed
+            else {
+                completion(.failure(PigeonError(
+                    code: "INVALID_TEST_EXPERIENCE_INTERACTION",
+                    message: "Unsupported test Experience interaction.",
+                    details: nil
+                )))
+                return
+            }
+            completion(.success(await WtsSDK.shared.reportTestSessionExperienceInteraction(value)))
+        }
+    }
+
     func flush(completion: @escaping (Result<Void, Error>) -> Void) {
         Task { await WtsSDK.shared.flush(); completion(.success(())) }
     }
@@ -326,6 +393,127 @@ private extension WtsExperienceAction {
             target: target
         )
     }
+}
+
+private extension WtsTestSessionCheck {
+    func toData() -> WtsTestSessionCheckData {
+        WtsTestSessionCheckData(key: key, status: status, code: code, message: message)
+    }
+}
+
+private extension WtsTestSessionJoinResult {
+    func toData() -> WtsTestSessionJoinData {
+        WtsTestSessionJoinData(
+            accepted: accepted,
+            joined: joined,
+            compatible: compatible,
+            checks: checks.map { $0.toData() },
+            requiredSdkVersion: requiredSDKVersion,
+            sessionId: sessionId,
+            expiresAt: expiresAt?.ISO8601Format(),
+            testProfileExternalUserId: testProfileExternalUserId,
+            errorCode: errorCode
+        )
+    }
+}
+
+private extension WtsTestSessionDiagnostics {
+    func toData() -> WtsTestSessionDiagnosticsData {
+        WtsTestSessionDiagnosticsData(
+            joined: joined,
+            compatible: compatible,
+            checks: checks.map { $0.toData() },
+            pendingSignals: Int64(pendingSignals),
+            sessionId: sessionId,
+            expiresAt: expiresAt?.ISO8601Format(),
+            requiredSdkVersion: requiredSDKVersion,
+            lastErrorCode: lastErrorCode
+        )
+    }
+}
+
+private extension WtsTestSessionProbeLink {
+    func toData() -> WtsTestSessionProbeLinkData {
+        WtsTestSessionProbeLinkData(
+            id: id,
+            path: path,
+            parametersJson: testSessionJSONString(parameters.mapValues(\.foundationValue))
+        )
+    }
+}
+
+private extension WtsTestSessionProbeResult {
+    func toData() -> WtsTestSessionProbeData {
+        WtsTestSessionProbeData(
+            match: match,
+            status: status,
+            code: code,
+            originalUrl: originalURL.absoluteString,
+            fallbackUrl: fallbackURL.absoluteString,
+            link: link?.toData()
+        )
+    }
+}
+
+private extension WtsTestSessionProbeRunResult {
+    func toData() -> WtsTestSessionProbeRunData {
+        WtsTestSessionProbeRunData(
+            accepted: accepted,
+            emitted: emitted,
+            skipped: skipped,
+            pendingSignals: Int64(pendingSignals),
+            experienceDecisionJson: experienceDecision.map { testSessionJSONString($0.jsonObject) }
+        )
+    }
+}
+
+private extension WtsTestSessionExperienceDecision {
+    var jsonObject: [String: Any] {
+        [
+            "outcome": outcome,
+            "reason": reason ?? NSNull(),
+            "testGrant": testGrant.map {
+                ["fixtureId": $0.fixtureId, "expiresAt": $0.expiresAt]
+            } ?? NSNull(),
+            "decision": decision.map { campaign in
+                [
+                    "campaignId": campaign.campaignId,
+                    "campaignVersionId": campaign.campaignVersionId,
+                    "placement": campaign.placement,
+                    "defaultLocale": campaign.defaultLocale,
+                    "variant": campaign.variant.map { variant in
+                        [
+                            "id": variant.id,
+                            "key": variant.key,
+                            "content": variant.content.foundationValue,
+                            "asset": variant.assetURL.map { ["url": $0.absoluteString] } ?? NSNull(),
+                        ]
+                    } ?? NSNull(),
+                ]
+            } ?? NSNull(),
+        ]
+    }
+}
+
+private extension WtsTestSessionJSONValue {
+    var foundationValue: Any {
+        switch self {
+        case .object(let value): value.mapValues(\.foundationValue)
+        case .array(let value): value.map(\.foundationValue)
+        case .string(let value): value
+        case .number(let value): value
+        case .bool(let value): value
+        case .null: NSNull()
+        }
+    }
+}
+
+private func testSessionJSONString(_ value: Any) -> String {
+    guard JSONSerialization.isValidJSONObject(value),
+          let data = try? JSONSerialization.data(withJSONObject: value, options: [.sortedKeys]),
+          let text = String(data: data, encoding: .utf8)
+    else { return "{}" }
+    return text
 }
 
 private extension WtsValue {

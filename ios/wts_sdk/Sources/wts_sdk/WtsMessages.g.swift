@@ -777,6 +777,337 @@ struct WtsExperienceData: Hashable {
   }
 }
 
+/// Generated class from Pigeon that represents data sent in messages.
+struct WtsTestSessionCheckData: Hashable {
+  var key: String
+  var status: String
+  var code: String? = nil
+  var message: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> WtsTestSessionCheckData? {
+    let key = pigeonVar_list[0] as! String
+    let status = pigeonVar_list[1] as! String
+    let code: String? = nilOrValue(pigeonVar_list[2])
+    let message: String? = nilOrValue(pigeonVar_list[3])
+
+    return WtsTestSessionCheckData(
+      key: key,
+      status: status,
+      code: code,
+      message: message
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      key,
+      status,
+      code,
+      message,
+    ]
+  }
+  static func == (lhs: WtsTestSessionCheckData, rhs: WtsTestSessionCheckData) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return deepEqualsWtsMessages(lhs.key, rhs.key) && deepEqualsWtsMessages(lhs.status, rhs.status) && deepEqualsWtsMessages(lhs.code, rhs.code) && deepEqualsWtsMessages(lhs.message, rhs.message)
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("WtsTestSessionCheckData")
+    deepHashWtsMessages(value: key, hasher: &hasher)
+    deepHashWtsMessages(value: status, hasher: &hasher)
+    deepHashWtsMessages(value: code, hasher: &hasher)
+    deepHashWtsMessages(value: message, hasher: &hasher)
+  }
+}
+
+/// Generated class from Pigeon that represents data sent in messages.
+struct WtsTestSessionJoinData: Hashable {
+  var accepted: Bool
+  var joined: Bool
+  var compatible: Bool
+  var checks: [WtsTestSessionCheckData]
+  var requiredSdkVersion: String? = nil
+  var sessionId: String? = nil
+  var expiresAt: String? = nil
+  var testProfileExternalUserId: String? = nil
+  var errorCode: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> WtsTestSessionJoinData? {
+    let accepted = pigeonVar_list[0] as! Bool
+    let joined = pigeonVar_list[1] as! Bool
+    let compatible = pigeonVar_list[2] as! Bool
+    let checks = pigeonVar_list[3] as! [WtsTestSessionCheckData]
+    let requiredSdkVersion: String? = nilOrValue(pigeonVar_list[4])
+    let sessionId: String? = nilOrValue(pigeonVar_list[5])
+    let expiresAt: String? = nilOrValue(pigeonVar_list[6])
+    let testProfileExternalUserId: String? = nilOrValue(pigeonVar_list[7])
+    let errorCode: String? = nilOrValue(pigeonVar_list[8])
+
+    return WtsTestSessionJoinData(
+      accepted: accepted,
+      joined: joined,
+      compatible: compatible,
+      checks: checks,
+      requiredSdkVersion: requiredSdkVersion,
+      sessionId: sessionId,
+      expiresAt: expiresAt,
+      testProfileExternalUserId: testProfileExternalUserId,
+      errorCode: errorCode
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      accepted,
+      joined,
+      compatible,
+      checks,
+      requiredSdkVersion,
+      sessionId,
+      expiresAt,
+      testProfileExternalUserId,
+      errorCode,
+    ]
+  }
+  static func == (lhs: WtsTestSessionJoinData, rhs: WtsTestSessionJoinData) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return deepEqualsWtsMessages(lhs.accepted, rhs.accepted) && deepEqualsWtsMessages(lhs.joined, rhs.joined) && deepEqualsWtsMessages(lhs.compatible, rhs.compatible) && deepEqualsWtsMessages(lhs.checks, rhs.checks) && deepEqualsWtsMessages(lhs.requiredSdkVersion, rhs.requiredSdkVersion) && deepEqualsWtsMessages(lhs.sessionId, rhs.sessionId) && deepEqualsWtsMessages(lhs.expiresAt, rhs.expiresAt) && deepEqualsWtsMessages(lhs.testProfileExternalUserId, rhs.testProfileExternalUserId) && deepEqualsWtsMessages(lhs.errorCode, rhs.errorCode)
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("WtsTestSessionJoinData")
+    deepHashWtsMessages(value: accepted, hasher: &hasher)
+    deepHashWtsMessages(value: joined, hasher: &hasher)
+    deepHashWtsMessages(value: compatible, hasher: &hasher)
+    deepHashWtsMessages(value: checks, hasher: &hasher)
+    deepHashWtsMessages(value: requiredSdkVersion, hasher: &hasher)
+    deepHashWtsMessages(value: sessionId, hasher: &hasher)
+    deepHashWtsMessages(value: expiresAt, hasher: &hasher)
+    deepHashWtsMessages(value: testProfileExternalUserId, hasher: &hasher)
+    deepHashWtsMessages(value: errorCode, hasher: &hasher)
+  }
+}
+
+/// Generated class from Pigeon that represents data sent in messages.
+struct WtsTestSessionDiagnosticsData: Hashable {
+  var joined: Bool
+  var compatible: Bool
+  var checks: [WtsTestSessionCheckData]
+  var pendingSignals: Int64
+  var sessionId: String? = nil
+  var expiresAt: String? = nil
+  var requiredSdkVersion: String? = nil
+  var lastErrorCode: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> WtsTestSessionDiagnosticsData? {
+    let joined = pigeonVar_list[0] as! Bool
+    let compatible = pigeonVar_list[1] as! Bool
+    let checks = pigeonVar_list[2] as! [WtsTestSessionCheckData]
+    let pendingSignals = pigeonVar_list[3] as! Int64
+    let sessionId: String? = nilOrValue(pigeonVar_list[4])
+    let expiresAt: String? = nilOrValue(pigeonVar_list[5])
+    let requiredSdkVersion: String? = nilOrValue(pigeonVar_list[6])
+    let lastErrorCode: String? = nilOrValue(pigeonVar_list[7])
+
+    return WtsTestSessionDiagnosticsData(
+      joined: joined,
+      compatible: compatible,
+      checks: checks,
+      pendingSignals: pendingSignals,
+      sessionId: sessionId,
+      expiresAt: expiresAt,
+      requiredSdkVersion: requiredSdkVersion,
+      lastErrorCode: lastErrorCode
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      joined,
+      compatible,
+      checks,
+      pendingSignals,
+      sessionId,
+      expiresAt,
+      requiredSdkVersion,
+      lastErrorCode,
+    ]
+  }
+  static func == (lhs: WtsTestSessionDiagnosticsData, rhs: WtsTestSessionDiagnosticsData) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return deepEqualsWtsMessages(lhs.joined, rhs.joined) && deepEqualsWtsMessages(lhs.compatible, rhs.compatible) && deepEqualsWtsMessages(lhs.checks, rhs.checks) && deepEqualsWtsMessages(lhs.pendingSignals, rhs.pendingSignals) && deepEqualsWtsMessages(lhs.sessionId, rhs.sessionId) && deepEqualsWtsMessages(lhs.expiresAt, rhs.expiresAt) && deepEqualsWtsMessages(lhs.requiredSdkVersion, rhs.requiredSdkVersion) && deepEqualsWtsMessages(lhs.lastErrorCode, rhs.lastErrorCode)
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("WtsTestSessionDiagnosticsData")
+    deepHashWtsMessages(value: joined, hasher: &hasher)
+    deepHashWtsMessages(value: compatible, hasher: &hasher)
+    deepHashWtsMessages(value: checks, hasher: &hasher)
+    deepHashWtsMessages(value: pendingSignals, hasher: &hasher)
+    deepHashWtsMessages(value: sessionId, hasher: &hasher)
+    deepHashWtsMessages(value: expiresAt, hasher: &hasher)
+    deepHashWtsMessages(value: requiredSdkVersion, hasher: &hasher)
+    deepHashWtsMessages(value: lastErrorCode, hasher: &hasher)
+  }
+}
+
+/// Generated class from Pigeon that represents data sent in messages.
+struct WtsTestSessionProbeLinkData: Hashable {
+  var id: String
+  var path: String
+  var parametersJson: String
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> WtsTestSessionProbeLinkData? {
+    let id = pigeonVar_list[0] as! String
+    let path = pigeonVar_list[1] as! String
+    let parametersJson = pigeonVar_list[2] as! String
+
+    return WtsTestSessionProbeLinkData(
+      id: id,
+      path: path,
+      parametersJson: parametersJson
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      id,
+      path,
+      parametersJson,
+    ]
+  }
+  static func == (lhs: WtsTestSessionProbeLinkData, rhs: WtsTestSessionProbeLinkData) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return deepEqualsWtsMessages(lhs.id, rhs.id) && deepEqualsWtsMessages(lhs.path, rhs.path) && deepEqualsWtsMessages(lhs.parametersJson, rhs.parametersJson)
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("WtsTestSessionProbeLinkData")
+    deepHashWtsMessages(value: id, hasher: &hasher)
+    deepHashWtsMessages(value: path, hasher: &hasher)
+    deepHashWtsMessages(value: parametersJson, hasher: &hasher)
+  }
+}
+
+/// Generated class from Pigeon that represents data sent in messages.
+struct WtsTestSessionProbeData: Hashable {
+  var match: Bool
+  var status: String
+  var code: String
+  var originalUrl: String
+  var fallbackUrl: String
+  var link: WtsTestSessionProbeLinkData? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> WtsTestSessionProbeData? {
+    let match = pigeonVar_list[0] as! Bool
+    let status = pigeonVar_list[1] as! String
+    let code = pigeonVar_list[2] as! String
+    let originalUrl = pigeonVar_list[3] as! String
+    let fallbackUrl = pigeonVar_list[4] as! String
+    let link: WtsTestSessionProbeLinkData? = nilOrValue(pigeonVar_list[5])
+
+    return WtsTestSessionProbeData(
+      match: match,
+      status: status,
+      code: code,
+      originalUrl: originalUrl,
+      fallbackUrl: fallbackUrl,
+      link: link
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      match,
+      status,
+      code,
+      originalUrl,
+      fallbackUrl,
+      link,
+    ]
+  }
+  static func == (lhs: WtsTestSessionProbeData, rhs: WtsTestSessionProbeData) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return deepEqualsWtsMessages(lhs.match, rhs.match) && deepEqualsWtsMessages(lhs.status, rhs.status) && deepEqualsWtsMessages(lhs.code, rhs.code) && deepEqualsWtsMessages(lhs.originalUrl, rhs.originalUrl) && deepEqualsWtsMessages(lhs.fallbackUrl, rhs.fallbackUrl) && deepEqualsWtsMessages(lhs.link, rhs.link)
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("WtsTestSessionProbeData")
+    deepHashWtsMessages(value: match, hasher: &hasher)
+    deepHashWtsMessages(value: status, hasher: &hasher)
+    deepHashWtsMessages(value: code, hasher: &hasher)
+    deepHashWtsMessages(value: originalUrl, hasher: &hasher)
+    deepHashWtsMessages(value: fallbackUrl, hasher: &hasher)
+    deepHashWtsMessages(value: link, hasher: &hasher)
+  }
+}
+
+/// Generated class from Pigeon that represents data sent in messages.
+struct WtsTestSessionProbeRunData: Hashable {
+  var accepted: Bool
+  var emitted: [String]
+  var skipped: [String]
+  var pendingSignals: Int64
+  var experienceDecisionJson: String? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> WtsTestSessionProbeRunData? {
+    let accepted = pigeonVar_list[0] as! Bool
+    let emitted = pigeonVar_list[1] as! [String]
+    let skipped = pigeonVar_list[2] as! [String]
+    let pendingSignals = pigeonVar_list[3] as! Int64
+    let experienceDecisionJson: String? = nilOrValue(pigeonVar_list[4])
+
+    return WtsTestSessionProbeRunData(
+      accepted: accepted,
+      emitted: emitted,
+      skipped: skipped,
+      pendingSignals: pendingSignals,
+      experienceDecisionJson: experienceDecisionJson
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      accepted,
+      emitted,
+      skipped,
+      pendingSignals,
+      experienceDecisionJson,
+    ]
+  }
+  static func == (lhs: WtsTestSessionProbeRunData, rhs: WtsTestSessionProbeRunData) -> Bool {
+    if Swift.type(of: lhs) != Swift.type(of: rhs) {
+      return false
+    }
+    return deepEqualsWtsMessages(lhs.accepted, rhs.accepted) && deepEqualsWtsMessages(lhs.emitted, rhs.emitted) && deepEqualsWtsMessages(lhs.skipped, rhs.skipped) && deepEqualsWtsMessages(lhs.pendingSignals, rhs.pendingSignals) && deepEqualsWtsMessages(lhs.experienceDecisionJson, rhs.experienceDecisionJson)
+  }
+
+  func hash(into hasher: inout Hasher) {
+    hasher.combine("WtsTestSessionProbeRunData")
+    deepHashWtsMessages(value: accepted, hasher: &hasher)
+    deepHashWtsMessages(value: emitted, hasher: &hasher)
+    deepHashWtsMessages(value: skipped, hasher: &hasher)
+    deepHashWtsMessages(value: pendingSignals, hasher: &hasher)
+    deepHashWtsMessages(value: experienceDecisionJson, hasher: &hasher)
+  }
+}
+
 private class WtsMessagesPigeonCodecReader: FlutterStandardReader {
   override func readValue(ofType type: UInt8) -> Any? {
     switch type {
@@ -808,6 +1139,18 @@ private class WtsMessagesPigeonCodecReader: FlutterStandardReader {
       return WtsExperienceTranslationData.fromList(self.readValue() as! [Any?])
     case 140:
       return WtsExperienceData.fromList(self.readValue() as! [Any?])
+    case 141:
+      return WtsTestSessionCheckData.fromList(self.readValue() as! [Any?])
+    case 142:
+      return WtsTestSessionJoinData.fromList(self.readValue() as! [Any?])
+    case 143:
+      return WtsTestSessionDiagnosticsData.fromList(self.readValue() as! [Any?])
+    case 144:
+      return WtsTestSessionProbeLinkData.fromList(self.readValue() as! [Any?])
+    case 145:
+      return WtsTestSessionProbeData.fromList(self.readValue() as! [Any?])
+    case 146:
+      return WtsTestSessionProbeRunData.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
     }
@@ -851,6 +1194,24 @@ private class WtsMessagesPigeonCodecWriter: FlutterStandardWriter {
       super.writeValue(value.toList())
     } else if let value = value as? WtsExperienceData {
       super.writeByte(140)
+      super.writeValue(value.toList())
+    } else if let value = value as? WtsTestSessionCheckData {
+      super.writeByte(141)
+      super.writeValue(value.toList())
+    } else if let value = value as? WtsTestSessionJoinData {
+      super.writeByte(142)
+      super.writeValue(value.toList())
+    } else if let value = value as? WtsTestSessionDiagnosticsData {
+      super.writeByte(143)
+      super.writeValue(value.toList())
+    } else if let value = value as? WtsTestSessionProbeLinkData {
+      super.writeByte(144)
+      super.writeValue(value.toList())
+    } else if let value = value as? WtsTestSessionProbeData {
+      super.writeByte(145)
+      super.writeValue(value.toList())
+    } else if let value = value as? WtsTestSessionProbeRunData {
+      super.writeByte(146)
       super.writeValue(value.toList())
     } else {
       super.writeValue(value)
@@ -941,6 +1302,12 @@ protocol WtsHostApi {
   func presentNextExperience(completion: @escaping (Result<Bool, Error>) -> Void)
   func dismissCurrentExperience(completion: @escaping (Result<Bool, Error>) -> Void)
   func getExperienceDiagnostics(completion: @escaping (Result<WtsExperienceDiagnosticsData, Error>) -> Void)
+  func joinTestSession(pairing: String, completion: @escaping (Result<WtsTestSessionJoinData, Error>) -> Void)
+  func leaveTestSession(completion: @escaping (Result<Bool, Error>) -> Void)
+  func getTestSessionDiagnostics(completion: @escaping (Result<WtsTestSessionDiagnosticsData, Error>) -> Void)
+  func probeTestSessionUrl(url: String, completion: @escaping (Result<WtsTestSessionProbeData, Error>) -> Void)
+  func runTestSessionProbes(completion: @escaping (Result<WtsTestSessionProbeRunData, Error>) -> Void)
+  func reportTestSessionExperienceInteraction(interaction: String, completion: @escaping (Result<Bool, Error>) -> Void)
   func flush(completion: @escaping (Result<Void, Error>) -> Void)
 }
 
@@ -1182,6 +1549,102 @@ class WtsHostApiSetup {
       }
     } else {
       getExperienceDiagnosticsChannel.setMessageHandler(nil)
+    }
+    let joinTestSessionChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.wts_sdk.WtsHostApi.joinTestSession\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      joinTestSessionChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let pairingArg = args[0] as! String
+        api.joinTestSession(pairing: pairingArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      joinTestSessionChannel.setMessageHandler(nil)
+    }
+    let leaveTestSessionChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.wts_sdk.WtsHostApi.leaveTestSession\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      leaveTestSessionChannel.setMessageHandler { _, reply in
+        api.leaveTestSession { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      leaveTestSessionChannel.setMessageHandler(nil)
+    }
+    let getTestSessionDiagnosticsChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.wts_sdk.WtsHostApi.getTestSessionDiagnostics\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      getTestSessionDiagnosticsChannel.setMessageHandler { _, reply in
+        api.getTestSessionDiagnostics { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      getTestSessionDiagnosticsChannel.setMessageHandler(nil)
+    }
+    let probeTestSessionUrlChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.wts_sdk.WtsHostApi.probeTestSessionUrl\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      probeTestSessionUrlChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let urlArg = args[0] as! String
+        api.probeTestSessionUrl(url: urlArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      probeTestSessionUrlChannel.setMessageHandler(nil)
+    }
+    let runTestSessionProbesChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.wts_sdk.WtsHostApi.runTestSessionProbes\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      runTestSessionProbesChannel.setMessageHandler { _, reply in
+        api.runTestSessionProbes { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      runTestSessionProbesChannel.setMessageHandler(nil)
+    }
+    let reportTestSessionExperienceInteractionChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.wts_sdk.WtsHostApi.reportTestSessionExperienceInteraction\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      reportTestSessionExperienceInteractionChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let interactionArg = args[0] as! String
+        api.reportTestSessionExperienceInteraction(interaction: interactionArg) { result in
+          switch result {
+          case .success(let res):
+            reply(wrapResult(res))
+          case .failure(let error):
+            reply(wrapError(error))
+          }
+        }
+      }
+    } else {
+      reportTestSessionExperienceInteractionChannel.setMessageHandler(nil)
     }
     let flushChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.wts_sdk.WtsHostApi.flush\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
     if let api = api {

@@ -1,16 +1,42 @@
-# wts_sdk_example
+# wts.is Flutter example
 
-A new Flutter project.
+Run this application with the Flutter version declared by the SDK, then replace
+the example public app key with a Mobile App key from your wts.is workspace. The
+sample deliberately keeps routing application-owned: it receives a URL, asks
+the SDK for a validated route, and uses its own route allowlist.
 
-## Getting Started
+## SDK Test & Validate
 
-This project is a starting point for a Flutter application.
+The dashboard opens this short-lived pairing URL from its QR code:
 
-A few resources to get you started if this is your first Flutter project:
+```text
+https://<mobile-app-host>/_wts/test/pair?pairing=<dashboard-issued-token>
+```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Handle it before the normal deep-link method:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```dart
+Future<void> onIncomingUrl(Uri uri) async {
+  if (uri.scheme == 'https' && uri.path == '/_wts/test/pair') {
+    final joined = await WtsSdk.joinTestSession(uri.toString());
+    showSdkTestChecks(joined.checks);
+    return;
+  }
+
+  final link = await WtsSdk.handle(uri);
+  routeIfAllowed(link);
+}
+```
+
+After pairing, render `getTestSessionDiagnostics()` and run
+`runTestSessionProbes()`. `probeTestSessionUrl()` verifies a supplied URL
+without creating an analytics event. If the result contains a ready
+`experienceDecision`, display it only through a manual test preview, then
+report its actual impression or action with
+`reportTestSessionExperienceInteraction('impression')` or `'action'`.
+Finish with `leaveTestSession()`.
+
+The pairing credential must not be logged, stored by the app, or reused. Test
+signals use an SDK-owned bounded queue separate from production analytics and
+Experiences. These APIs require matching published Flutter, Android, and iOS
+SDK releases; the `0.3.0-alpha.1` source line is not a publication claim.

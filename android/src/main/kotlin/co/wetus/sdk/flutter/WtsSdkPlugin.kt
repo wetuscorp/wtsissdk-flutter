@@ -14,6 +14,13 @@ import co.wetus.sdk.WtsReportedAttribution
 import co.wetus.sdk.WtsProfileConsent
 import co.wetus.sdk.WtsSdk
 import co.wetus.sdk.WtsSdkException
+import co.wetus.sdk.WtsSdkFamily
+import co.wetus.sdk.WtsTestSessionExperienceDecision
+import co.wetus.sdk.WtsTestSessionExperienceInteraction
+import co.wetus.sdk.WtsTestSessionPairing
+import co.wetus.sdk.WtsTestSessionProbeLink
+import co.wetus.sdk.WtsTestSessionProbeResult
+import co.wetus.sdk.WtsTestSessionProbeRunResult
 import co.wetus.sdk.WtsUserUpdate
 import co.wetus.sdk.WtsUserValue
 import co.wetus.sdk.WtsValue
@@ -23,6 +30,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 class WtsSdkPlugin : FlutterPlugin, WtsHostApi {
     private lateinit var context: Context
@@ -207,6 +218,76 @@ class WtsSdkPlugin : FlutterPlugin, WtsHostApi {
         )
     }
 
+    override fun joinTestSession(
+        pairing: String,
+        callback: (Result<WtsTestSessionJoinData>) -> Unit,
+    ) = launch(callback) {
+        WtsSdk.shared().joinTestSession(
+            WtsTestSessionPairing.from(pairing),
+            WtsSdkFamily.FLUTTER,
+        ).let { result ->
+            WtsTestSessionJoinData(
+                accepted = result.accepted,
+                joined = result.joined,
+                compatible = result.compatible,
+                checks = result.checks.map {
+                    WtsTestSessionCheckData(it.key, it.status, it.code, it.message)
+                },
+                requiredSdkVersion = result.requiredSdkVersion,
+                sessionId = result.sessionId,
+                expiresAt = result.expiresAt,
+                testProfileExternalUserId = result.testProfileExternalUserId,
+                errorCode = result.errorCode,
+            )
+        }
+    }
+
+    override fun leaveTestSession(callback: (Result<Boolean>) -> Unit) = launch(callback) {
+        WtsSdk.shared().leaveTestSession()
+    }
+
+    override fun getTestSessionDiagnostics(
+        callback: (Result<WtsTestSessionDiagnosticsData>) -> Unit,
+    ) {
+        callback(runCatching {
+            WtsSdk.shared().getTestSessionDiagnostics().let { result ->
+                WtsTestSessionDiagnosticsData(
+                    joined = result.joined,
+                    compatible = result.compatible,
+                    checks = result.checks.map {
+                        WtsTestSessionCheckData(it.key, it.status, it.code, it.message)
+                    },
+                    pendingSignals = result.pendingSignals.toLong(),
+                    sessionId = result.sessionId,
+                    expiresAt = result.expiresAt,
+                    requiredSdkVersion = result.requiredSdkVersion,
+                    lastErrorCode = result.lastErrorCode,
+                )
+            }
+        }.forFlutter())
+    }
+
+    override fun probeTestSessionUrl(
+        url: String,
+        callback: (Result<WtsTestSessionProbeData>) -> Unit,
+    ) = launch(callback) { WtsSdk.shared().probeTestSessionUrl(url).toData() }
+
+    override fun runTestSessionProbes(
+        callback: (Result<WtsTestSessionProbeRunData>) -> Unit,
+    ) = launch(callback) { WtsSdk.shared().runTestSessionProbes().toData() }
+
+    override fun reportTestSessionExperienceInteraction(
+        interaction: String,
+        callback: (Result<Boolean>) -> Unit,
+    ) = launch(callback) {
+        val value = when (interaction) {
+            "impression" -> WtsTestSessionExperienceInteraction.IMPRESSION
+            "action" -> WtsTestSessionExperienceInteraction.ACTION
+            else -> throw IllegalArgumentException("Unsupported test Experience interaction.")
+        }
+        WtsSdk.shared().reportTestSessionExperienceInteraction(value)
+    }
+
     override fun flush(callback: (Result<Unit>) -> Unit) = launch(callback) { WtsSdk.shared().flush() }
 
     private fun <T> launch(callback: (Result<T>) -> Unit, block: suspend () -> T) {
@@ -265,6 +346,75 @@ class WtsSdkPlugin : FlutterPlugin, WtsHostApi {
         type = type.name,
         target = target,
     )
+
+    private fun WtsTestSessionProbeResult.toData() = WtsTestSessionProbeData(
+        match = match,
+        status = status,
+        code = code,
+        originalUrl = originalUrl,
+        fallbackUrl = fallbackUrl,
+        link = link?.toData(),
+    )
+
+    private fun WtsTestSessionProbeLink.toData() = WtsTestSessionProbeLinkData(
+        id = id,
+        path = path,
+        parametersJson = Json.encodeToString(
+            JsonObject.serializer(),
+            JsonObject(parameters.mapValues { (_, value) -> value.toTestJson() }),
+        ),
+    )
+
+    private fun WtsTestSessionProbeRunResult.toData() = WtsTestSessionProbeRunData(
+        accepted = accepted,
+        emitted = emitted,
+        skipped = skipped,
+        pendingSignals = pendingSignals.toLong(),
+        experienceDecisionJson = experienceDecision?.toTestJson()?.toString(),
+    )
+
+    private fun WtsTestSessionExperienceDecision.toTestJson() = JsonObject(
+        buildMap {
+            put("outcome", JsonPrimitive(outcome))
+            put("reason", reason?.let(::JsonPrimitive) ?: JsonNull)
+            put("testGrant", testGrant?.let { grant ->
+                JsonObject(
+                    mapOf(
+                        "fixtureId" to JsonPrimitive(grant.fixtureId),
+                        "expiresAt" to JsonPrimitive(grant.expiresAt),
+                    ),
+                )
+            } ?: JsonNull)
+            put("decision", decision?.let { decision ->
+                JsonObject(
+                    buildMap {
+                        put("campaignId", JsonPrimitive(decision.campaignId))
+                        put("campaignVersionId", JsonPrimitive(decision.campaignVersionId))
+                        put("placement", JsonPrimitive(decision.placement))
+                        put("defaultLocale", JsonPrimitive(decision.defaultLocale))
+                        put("variant", decision.variant?.let { variant ->
+                            JsonObject(
+                                buildMap {
+                                    put("id", JsonPrimitive(variant.id))
+                                    put("key", JsonPrimitive(variant.key))
+                                    put("content", variant.content)
+                                    put("asset", variant.assetUrl?.let { url ->
+                                        JsonObject(mapOf("url" to JsonPrimitive(url)))
+                                    } ?: JsonNull)
+                                },
+                            )
+                        } ?: JsonNull)
+                    },
+                )
+            } ?: JsonNull)
+        },
+    )
+
+    private fun WtsValue.toTestJson() = when (this) {
+        is WtsValue.StringValue -> JsonPrimitive(value)
+        is WtsValue.NumberValue -> JsonPrimitive(value)
+        is WtsValue.BooleanValue -> JsonPrimitive(value)
+    }
 
     private fun WtsValue.toData(key: String) = when (this) {
         is WtsValue.StringValue -> WtsParameterData(key, WtsValueKind.STRING, stringValue = value)

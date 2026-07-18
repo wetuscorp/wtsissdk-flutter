@@ -1,5 +1,7 @@
 library;
 
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:meta/meta.dart';
 
@@ -186,6 +188,156 @@ class WtsSdkException implements Exception {
   String toString() => 'WtsSdkException($code, $message)';
 }
 
+class WtsTestSessionCheck {
+  const WtsTestSessionCheck({
+    required this.key,
+    required this.status,
+    this.code,
+    this.message,
+  });
+
+  final String key;
+  final String status;
+  final String? code;
+  final String? message;
+}
+
+class WtsTestSessionJoinResult {
+  const WtsTestSessionJoinResult({
+    required this.accepted,
+    required this.joined,
+    required this.compatible,
+    required this.checks,
+    this.requiredSdkVersion,
+    this.sessionId,
+    this.expiresAt,
+    this.testProfileExternalUserId,
+    this.errorCode,
+  });
+
+  final bool accepted;
+  final bool joined;
+  final bool compatible;
+  final List<WtsTestSessionCheck> checks;
+  final String? requiredSdkVersion;
+  final String? sessionId;
+  final DateTime? expiresAt;
+  final String? testProfileExternalUserId;
+  final String? errorCode;
+}
+
+class WtsTestSessionDiagnostics {
+  const WtsTestSessionDiagnostics({
+    required this.joined,
+    required this.compatible,
+    required this.checks,
+    required this.pendingSignals,
+    this.sessionId,
+    this.expiresAt,
+    this.requiredSdkVersion,
+    this.lastErrorCode,
+  });
+
+  final bool joined;
+  final bool compatible;
+  final List<WtsTestSessionCheck> checks;
+  final int pendingSignals;
+  final String? sessionId;
+  final DateTime? expiresAt;
+  final String? requiredSdkVersion;
+  final String? lastErrorCode;
+}
+
+class WtsTestSessionProbeLink {
+  const WtsTestSessionProbeLink({
+    required this.id,
+    required this.path,
+    required this.parameters,
+  });
+
+  final String id;
+  final String path;
+  final Map<String, Object?> parameters;
+}
+
+class WtsTestSessionProbeResult {
+  const WtsTestSessionProbeResult({
+    required this.match,
+    required this.status,
+    required this.code,
+    required this.originalUrl,
+    required this.fallbackUrl,
+    this.link,
+  });
+
+  final bool match;
+  final String status;
+  final String code;
+  final Uri originalUrl;
+  final Uri fallbackUrl;
+  final WtsTestSessionProbeLink? link;
+}
+
+class WtsTestSessionExperienceDecision {
+  const WtsTestSessionExperienceDecision({
+    required this.outcome,
+    required this.reason,
+    required this.testGrant,
+    required this.decision,
+  });
+
+  final String outcome;
+  final String? reason;
+  final Map<String, Object?>? testGrant;
+  final Map<String, Object?>? decision;
+}
+
+class WtsTestSessionProbeRunResult {
+  const WtsTestSessionProbeRunResult({
+    required this.accepted,
+    required this.emitted,
+    required this.skipped,
+    required this.pendingSignals,
+    this.experienceDecision,
+  });
+
+  final bool accepted;
+  final List<String> emitted;
+  final List<String> skipped;
+  final int pendingSignals;
+  final WtsTestSessionExperienceDecision? experienceDecision;
+}
+
+WtsTestSessionCheck _testSessionCheck(WtsTestSessionCheckData data) =>
+    WtsTestSessionCheck(
+      key: data.key,
+      status: data.status,
+      code: data.code,
+      message: data.message,
+    );
+
+DateTime? _parseTimestamp(String? value) =>
+    value == null ? null : DateTime.tryParse(value)?.toUtc();
+
+Map<String, Object?> _jsonObject(String encoded) {
+  try {
+    final Object? decoded = jsonDecode(encoded);
+    if (decoded is! Map<Object?, Object?>) return const <String, Object?>{};
+    return decoded.map<String, Object?>(
+      (Object? key, Object? value) => MapEntry(key.toString(), value),
+    );
+  } on FormatException {
+    return const <String, Object?>{};
+  }
+}
+
+Map<String, Object?>? _nullableObject(Object? value) {
+  if (value is! Map<Object?, Object?>) return null;
+  return value.map<String, Object?>(
+    (Object? key, Object? item) => MapEntry(key.toString(), item),
+  );
+}
+
 class WtsSdk {
   WtsSdk._();
   static WtsPlatform _platform = PigeonWtsPlatform();
@@ -270,6 +422,37 @@ class WtsSdk {
 
   static Future<WtsExperienceDiagnostics> getExperienceDiagnostics() =>
       _guard(_platform.getExperienceDiagnostics);
+
+  static Future<WtsTestSessionJoinResult> joinTestSession(String pairing) {
+    if (pairing.trim().isEmpty) {
+      throw ArgumentError.value(
+          pairing, 'pairing', 'Expected a pairing URL, token, or code.');
+    }
+    return _guard(() => _platform.joinTestSession(pairing.trim()));
+  }
+
+  static Future<bool> leaveTestSession() => _guard(_platform.leaveTestSession);
+
+  static Future<WtsTestSessionDiagnostics> getTestSessionDiagnostics() =>
+      _guard(_platform.getTestSessionDiagnostics);
+
+  static Future<WtsTestSessionProbeResult> probeTestSessionUrl(Uri url) =>
+      _guard(() => _platform.probeTestSessionUrl(url.toString()),
+          fallbackUrl: url);
+
+  static Future<WtsTestSessionProbeRunResult> runTestSessionProbes() =>
+      _guard(_platform.runTestSessionProbes);
+
+  static Future<bool> reportTestSessionExperienceInteraction(
+    String interaction,
+  ) {
+    if (interaction != 'impression' && interaction != 'action') {
+      throw ArgumentError.value(
+          interaction, 'interaction', 'Expected impression or action.');
+    }
+    return _guard(
+        () => _platform.reportTestSessionExperienceInteraction(interaction));
+  }
 
   static WtsUnsubscribe onExperienceAvailable(
     WtsExperienceAvailableHandler handler,
@@ -470,6 +653,12 @@ abstract interface class WtsPlatform {
   Future<bool> presentNextExperience();
   Future<bool> dismissCurrentExperience();
   Future<WtsExperienceDiagnostics> getExperienceDiagnostics();
+  Future<WtsTestSessionJoinResult> joinTestSession(String pairing);
+  Future<bool> leaveTestSession();
+  Future<WtsTestSessionDiagnostics> getTestSessionDiagnostics();
+  Future<WtsTestSessionProbeResult> probeTestSessionUrl(String url);
+  Future<WtsTestSessionProbeRunResult> runTestSessionProbes();
+  Future<bool> reportTestSessionExperienceInteraction(String interaction);
   Future<void> flush();
 }
 
@@ -597,6 +786,88 @@ class PigeonWtsPlatform implements WtsPlatform {
       lastErrorCode: data.lastErrorCode,
     );
   }
+
+  @override
+  Future<WtsTestSessionJoinResult> joinTestSession(String pairing) async {
+    final WtsTestSessionJoinData data = await _api.joinTestSession(pairing);
+    return WtsTestSessionJoinResult(
+      accepted: data.accepted,
+      joined: data.joined,
+      compatible: data.compatible,
+      checks: data.checks.map(_testSessionCheck).toList(growable: false),
+      requiredSdkVersion: data.requiredSdkVersion,
+      sessionId: data.sessionId,
+      expiresAt: _parseTimestamp(data.expiresAt),
+      testProfileExternalUserId: data.testProfileExternalUserId,
+      errorCode: data.errorCode,
+    );
+  }
+
+  @override
+  Future<bool> leaveTestSession() => _api.leaveTestSession();
+
+  @override
+  Future<WtsTestSessionDiagnostics> getTestSessionDiagnostics() async {
+    final WtsTestSessionDiagnosticsData data =
+        await _api.getTestSessionDiagnostics();
+    return WtsTestSessionDiagnostics(
+      joined: data.joined,
+      compatible: data.compatible,
+      checks: data.checks.map(_testSessionCheck).toList(growable: false),
+      pendingSignals: data.pendingSignals,
+      sessionId: data.sessionId,
+      expiresAt: _parseTimestamp(data.expiresAt),
+      requiredSdkVersion: data.requiredSdkVersion,
+      lastErrorCode: data.lastErrorCode,
+    );
+  }
+
+  @override
+  Future<WtsTestSessionProbeResult> probeTestSessionUrl(String url) async {
+    final WtsTestSessionProbeData data = await _api.probeTestSessionUrl(url);
+    return WtsTestSessionProbeResult(
+      match: data.match,
+      status: data.status,
+      code: data.code,
+      originalUrl: Uri.parse(data.originalUrl),
+      fallbackUrl: Uri.parse(data.fallbackUrl),
+      link: data.link == null
+          ? null
+          : WtsTestSessionProbeLink(
+              id: data.link!.id,
+              path: data.link!.path,
+              parameters: _jsonObject(data.link!.parametersJson),
+            ),
+    );
+  }
+
+  @override
+  Future<WtsTestSessionProbeRunResult> runTestSessionProbes() async {
+    final WtsTestSessionProbeRunData data = await _api.runTestSessionProbes();
+    final Map<String, Object?>? payload = data.experienceDecisionJson == null
+        ? null
+        : _jsonObject(data.experienceDecisionJson!);
+    final Object? outcome = payload?['outcome'];
+    final Object? reason = payload?['reason'];
+    return WtsTestSessionProbeRunResult(
+      accepted: data.accepted,
+      emitted: data.emitted,
+      skipped: data.skipped,
+      pendingSignals: data.pendingSignals,
+      experienceDecision: payload == null
+          ? null
+          : WtsTestSessionExperienceDecision(
+              outcome: outcome is String ? outcome : 'unavailable',
+              reason: reason is String ? reason : null,
+              testGrant: _nullableObject(payload['testGrant']),
+              decision: _nullableObject(payload['decision']),
+            ),
+    );
+  }
+
+  @override
+  Future<bool> reportTestSessionExperienceInteraction(String interaction) =>
+      _api.reportTestSessionExperienceInteraction(interaction);
 
   @override
   Future<void> flush() => _api.flush();

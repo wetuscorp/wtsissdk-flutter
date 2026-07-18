@@ -4,8 +4,16 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:wts_sdk/wts_sdk.dart';
+import 'package:wts_sdk/src/messages.g.dart' as pigeon;
+
+BasicMessageChannel<Object?> _testSessionChannel(String method) =>
+    BasicMessageChannel<Object?>(
+      'dev.flutter.pigeon.wts_sdk.WtsHostApi.$method',
+      pigeon.WtsHostApi.pigeonChannelCodec,
+    );
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late FakePlatform platform;
 
   setUp(() {
@@ -63,6 +71,220 @@ void main() {
     expect(diagnostics.testDeviceToken, 'test-device-token');
   });
 
+  test('forwards a canonical pairing URL unchanged after trimming', () async {
+    const String canonicalPairing =
+        'https://notiword.wts.is/_wts/test/pair?pairing=pairing-token';
+
+    final WtsTestSessionJoinResult joined = await WtsSdk.joinTestSession(
+      '  $canonicalPairing  ',
+    );
+
+    expect(platform.lastPairing, canonicalPairing);
+    expect(joined, isA<WtsTestSessionJoinResult>());
+    expect(joined.joined, isTrue);
+    expect(joined.sessionId, 'test-session-id');
+    expect(joined.checks.single.key, 'sdk_version');
+  });
+
+  test('forwards diagnostics and preserves the native session state', () async {
+    final WtsTestSessionDiagnostics diagnostics =
+        await WtsSdk.getTestSessionDiagnostics();
+
+    expect(platform.diagnosticsRequests, 1);
+    expect(diagnostics.joined, isTrue);
+    expect(diagnostics.compatible, isTrue);
+    expect(diagnostics.pendingSignals, 2);
+    expect(diagnostics.lastErrorCode, 'TEST_SESSION_RETRYING');
+    expect(diagnostics.expiresAt, DateTime.utc(2026, 7, 18, 12));
+  });
+
+  test('forwards a URL probe and keeps typed resolved link parameters',
+      () async {
+    final Uri url = Uri.parse('https://notiword.wts.is/checkout?ignored=true');
+
+    final WtsTestSessionProbeResult result =
+        await WtsSdk.probeTestSessionUrl(url);
+
+    expect(platform.lastProbeUrl, url.toString());
+    expect(result.match, isTrue);
+    expect(result.originalUrl, url);
+    expect(result.fallbackUrl, Uri.parse('https://personaleak.com/checkout'));
+    expect(result.link?.id, 'link_checkout');
+    expect(result.link?.path, '/checkout');
+    expect(result.link?.parameters,
+        <String, Object?>{'coupon': 'summer', 'member': true, 'sourceId': 42});
+  });
+
+  test(
+      'requires an explicit post-decision test interaction and keeps normal Experience controls separate',
+      () async {
+    expect(await WtsSdk.reportTestSessionExperienceInteraction('impression'),
+        isFalse);
+
+    await WtsSdk.presentNextExperience();
+    await WtsSdk.dismissCurrentExperience();
+    expect(platform.testExperienceInteractions, isEmpty);
+
+    final WtsTestSessionProbeRunResult probes =
+        await WtsSdk.runTestSessionProbes();
+
+    expect(probes.experienceDecision?.outcome, 'ready');
+    expect(probes.experienceDecision?.testGrant,
+        <String, Object?>{'grant': 'test-grant'});
+    expect(probes.experienceDecision?.decision,
+        <String, Object?>{'campaignId': 'campaign_checkout'});
+    expect(await WtsSdk.reportTestSessionExperienceInteraction('impression'),
+        isTrue);
+    expect(platform.testExperienceInteractions, <String>['impression']);
+  });
+
+  test(
+      'rejects unsupported test Experience interactions before native forwarding',
+      () {
+    expect(
+      () => WtsSdk.reportTestSessionExperienceInteraction('dismiss'),
+      throwsArgumentError,
+    );
+    expect(platform.testExperienceInteractions, isEmpty);
+  });
+
+  test('Pigeon bridge maps the complete test-session surface', () async {
+    const String canonicalPairing =
+        'https://notiword.wts.is/_wts/test/pair?pairing=pairing-token';
+    final dynamic messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+
+    messenger.setMockDecodedMessageHandler<Object?>(
+      _testSessionChannel('joinTestSession'),
+      (Object? message) async {
+        expect(message, <Object?>[canonicalPairing]);
+        return <Object?>[
+          pigeon.WtsTestSessionJoinData(
+            accepted: true,
+            joined: true,
+            compatible: true,
+            checks: <pigeon.WtsTestSessionCheckData>[
+              pigeon.WtsTestSessionCheckData(
+                  key: 'sdk_version', status: 'passed'),
+            ],
+            sessionId: 'test-session-id',
+            expiresAt: '2026-07-18T12:00:00.000Z',
+          ),
+        ];
+      },
+    );
+    messenger.setMockDecodedMessageHandler<Object?>(
+      _testSessionChannel('getTestSessionDiagnostics'),
+      (Object? message) async {
+        expect(message, isNull);
+        return <Object?>[
+          pigeon.WtsTestSessionDiagnosticsData(
+            joined: true,
+            compatible: true,
+            checks: <pigeon.WtsTestSessionCheckData>[
+              pigeon.WtsTestSessionCheckData(
+                key: 'sdk_version',
+                status: 'passed',
+              ),
+            ],
+            pendingSignals: 2,
+            lastErrorCode: 'TEST_SESSION_RETRYING',
+          ),
+        ];
+      },
+    );
+    messenger.setMockDecodedMessageHandler<Object?>(
+      _testSessionChannel('probeTestSessionUrl'),
+      (Object? message) async {
+        expect(message, <Object?>['https://notiword.wts.is/checkout']);
+        return <Object?>[
+          pigeon.WtsTestSessionProbeData(
+            match: true,
+            status: 'active',
+            code: 'OK',
+            originalUrl: 'https://notiword.wts.is/checkout',
+            fallbackUrl: 'https://personaleak.com/checkout',
+            link: pigeon.WtsTestSessionProbeLinkData(
+              id: 'link_checkout',
+              path: '/checkout',
+              parametersJson: '{"coupon":"summer","member":true,"sourceId":42}',
+            ),
+          ),
+        ];
+      },
+    );
+    messenger.setMockDecodedMessageHandler<Object?>(
+      _testSessionChannel('runTestSessionProbes'),
+      (Object? message) async {
+        expect(message, isNull);
+        return <Object?>[
+          pigeon.WtsTestSessionProbeRunData(
+            accepted: true,
+            emitted: <String>['identity_recorded', 'event_recorded'],
+            skipped: <String>[],
+            pendingSignals: 0,
+            experienceDecisionJson:
+                '{"outcome":"ready","testGrant":{"grant":"test-grant"},"decision":{"campaignId":"campaign_checkout"}}',
+          ),
+        ];
+      },
+    );
+    messenger.setMockDecodedMessageHandler<Object?>(
+      _testSessionChannel('reportTestSessionExperienceInteraction'),
+      (Object? message) async {
+        expect(message, <Object?>['impression']);
+        return <Object?>[true];
+      },
+    );
+    WtsSdk.platform = PigeonWtsPlatform();
+
+    final WtsTestSessionJoinResult joined =
+        await WtsSdk.joinTestSession('  $canonicalPairing  ');
+    final WtsTestSessionDiagnostics diagnostics =
+        await WtsSdk.getTestSessionDiagnostics();
+    final WtsTestSessionProbeResult probe = await WtsSdk.probeTestSessionUrl(
+      Uri.parse('https://notiword.wts.is/checkout'),
+    );
+    final WtsTestSessionProbeRunResult probes =
+        await WtsSdk.runTestSessionProbes();
+
+    expect(joined.expiresAt, DateTime.utc(2026, 7, 18, 12));
+    expect(diagnostics.pendingSignals, 2);
+    expect(probe.link?.parameters,
+        <String, Object?>{'coupon': 'summer', 'member': true, 'sourceId': 42});
+    expect(probes.experienceDecision?.outcome, 'ready');
+    expect(probes.experienceDecision?.testGrant,
+        <String, Object?>{'grant': 'test-grant'});
+    expect(await WtsSdk.reportTestSessionExperienceInteraction('impression'),
+        isTrue);
+  });
+
+  test('Pigeon bridge keeps malformed test decision payloads non-fatal',
+      () async {
+    final dynamic messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockDecodedMessageHandler<Object?>(
+      _testSessionChannel('runTestSessionProbes'),
+      (Object? message) async => <Object?>[
+        pigeon.WtsTestSessionProbeRunData(
+          accepted: true,
+          emitted: <String>[],
+          skipped: <String>[],
+          pendingSignals: 0,
+          experienceDecisionJson: '{"testGrant":{"grant":"test-grant"}}',
+        ),
+      ],
+    );
+    WtsSdk.platform = PigeonWtsPlatform();
+
+    final WtsTestSessionProbeRunResult result =
+        await WtsSdk.runTestSessionProbes();
+
+    expect(result.experienceDecision?.outcome, 'unavailable');
+    expect(result.experienceDecision?.testGrant,
+        <String, Object?>{'grant': 'test-grant'});
+  });
+
   test('handle errors retain the original web fallback URL', () async {
     platform.handleError = PlatformException(code: 'TIMEOUT');
     final Uri url = Uri.parse('https://demo.links.wts.is/summer');
@@ -107,10 +329,15 @@ void main() {
 
 class FakePlatform implements WtsPlatform {
   int trackCalls = 0;
+  int diagnosticsRequests = 0;
   WtsRevenue? revenue;
   Object? handleError;
   Object? configureError;
   String? lastScreen;
+  String? lastPairing;
+  String? lastProbeUrl;
+  bool _testExperienceDecisionReady = false;
+  final List<String> testExperienceInteractions = <String>[];
 
   @override
   Future<void> configure(
@@ -191,4 +418,82 @@ class FakePlatform implements WtsPlatform {
         presenting: false,
         testDeviceToken: 'test-device-token',
       );
+
+  @override
+  Future<WtsTestSessionJoinResult> joinTestSession(String pairing) async {
+    lastPairing = pairing;
+    return WtsTestSessionJoinResult(
+      accepted: true,
+      joined: true,
+      compatible: true,
+      checks: const <WtsTestSessionCheck>[
+        WtsTestSessionCheck(key: 'sdk_version', status: 'passed'),
+      ],
+      sessionId: 'test-session-id',
+    );
+  }
+
+  @override
+  Future<bool> leaveTestSession() async => true;
+
+  @override
+  Future<WtsTestSessionDiagnostics> getTestSessionDiagnostics() async {
+    diagnosticsRequests += 1;
+    return WtsTestSessionDiagnostics(
+      joined: true,
+      compatible: true,
+      checks: const <WtsTestSessionCheck>[
+        WtsTestSessionCheck(key: 'sdk_version', status: 'passed'),
+      ],
+      pendingSignals: 2,
+      expiresAt: DateTime.utc(2026, 7, 18, 12),
+      lastErrorCode: 'TEST_SESSION_RETRYING',
+    );
+  }
+
+  @override
+  Future<WtsTestSessionProbeResult> probeTestSessionUrl(String url) async {
+    lastProbeUrl = url;
+    return WtsTestSessionProbeResult(
+      match: true,
+      status: 'active',
+      code: 'OK',
+      originalUrl: Uri.parse(url),
+      fallbackUrl: Uri.parse('https://personaleak.com/checkout'),
+      link: const WtsTestSessionProbeLink(
+        id: 'link_checkout',
+        path: '/checkout',
+        parameters: <String, Object?>{
+          'coupon': 'summer',
+          'member': true,
+          'sourceId': 42,
+        },
+      ),
+    );
+  }
+
+  @override
+  Future<WtsTestSessionProbeRunResult> runTestSessionProbes() async {
+    _testExperienceDecisionReady = true;
+    return const WtsTestSessionProbeRunResult(
+      accepted: true,
+      emitted: <String>['identity_recorded', 'event_recorded'],
+      skipped: <String>[],
+      pendingSignals: 0,
+      experienceDecision: WtsTestSessionExperienceDecision(
+        outcome: 'ready',
+        reason: null,
+        testGrant: <String, Object?>{'grant': 'test-grant'},
+        decision: <String, Object?>{'campaignId': 'campaign_checkout'},
+      ),
+    );
+  }
+
+  @override
+  Future<bool> reportTestSessionExperienceInteraction(
+      String interaction) async {
+    if (!_testExperienceDecisionReady) return false;
+    testExperienceInteractions.add(interaction);
+    return true;
+  }
 }

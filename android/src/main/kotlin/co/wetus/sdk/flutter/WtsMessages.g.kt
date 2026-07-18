@@ -782,6 +782,326 @@ data class WtsExperienceData (
     return result
   }
 }
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class WtsTestSessionCheckData (
+  val key: String,
+  val status: String,
+  val code: String? = null,
+  val message: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): WtsTestSessionCheckData {
+      val key = pigeonVar_list[0] as String
+      val status = pigeonVar_list[1] as String
+      val code = pigeonVar_list[2] as String?
+      val message = pigeonVar_list[3] as String?
+      return WtsTestSessionCheckData(key, status, code, message)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      key,
+      status,
+      code,
+      message,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as WtsTestSessionCheckData
+    return WtsMessagesPigeonUtils.deepEquals(this.key, other.key) && WtsMessagesPigeonUtils.deepEquals(this.status, other.status) && WtsMessagesPigeonUtils.deepEquals(this.code, other.code) && WtsMessagesPigeonUtils.deepEquals(this.message, other.message)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.key)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.status)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.code)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.message)
+    return result
+  }
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class WtsTestSessionJoinData (
+  val accepted: Boolean,
+  val joined: Boolean,
+  val compatible: Boolean,
+  val checks: List<WtsTestSessionCheckData>,
+  val requiredSdkVersion: String? = null,
+  val sessionId: String? = null,
+  val expiresAt: String? = null,
+  val testProfileExternalUserId: String? = null,
+  val errorCode: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): WtsTestSessionJoinData {
+      val accepted = pigeonVar_list[0] as Boolean
+      val joined = pigeonVar_list[1] as Boolean
+      val compatible = pigeonVar_list[2] as Boolean
+      val checks = pigeonVar_list[3] as List<WtsTestSessionCheckData>
+      val requiredSdkVersion = pigeonVar_list[4] as String?
+      val sessionId = pigeonVar_list[5] as String?
+      val expiresAt = pigeonVar_list[6] as String?
+      val testProfileExternalUserId = pigeonVar_list[7] as String?
+      val errorCode = pigeonVar_list[8] as String?
+      return WtsTestSessionJoinData(accepted, joined, compatible, checks, requiredSdkVersion, sessionId, expiresAt, testProfileExternalUserId, errorCode)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      accepted,
+      joined,
+      compatible,
+      checks,
+      requiredSdkVersion,
+      sessionId,
+      expiresAt,
+      testProfileExternalUserId,
+      errorCode,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as WtsTestSessionJoinData
+    return WtsMessagesPigeonUtils.deepEquals(this.accepted, other.accepted) && WtsMessagesPigeonUtils.deepEquals(this.joined, other.joined) && WtsMessagesPigeonUtils.deepEquals(this.compatible, other.compatible) && WtsMessagesPigeonUtils.deepEquals(this.checks, other.checks) && WtsMessagesPigeonUtils.deepEquals(this.requiredSdkVersion, other.requiredSdkVersion) && WtsMessagesPigeonUtils.deepEquals(this.sessionId, other.sessionId) && WtsMessagesPigeonUtils.deepEquals(this.expiresAt, other.expiresAt) && WtsMessagesPigeonUtils.deepEquals(this.testProfileExternalUserId, other.testProfileExternalUserId) && WtsMessagesPigeonUtils.deepEquals(this.errorCode, other.errorCode)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.accepted)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.joined)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.compatible)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.checks)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.requiredSdkVersion)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.sessionId)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.expiresAt)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.testProfileExternalUserId)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.errorCode)
+    return result
+  }
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class WtsTestSessionDiagnosticsData (
+  val joined: Boolean,
+  val compatible: Boolean,
+  val checks: List<WtsTestSessionCheckData>,
+  val pendingSignals: Long,
+  val sessionId: String? = null,
+  val expiresAt: String? = null,
+  val requiredSdkVersion: String? = null,
+  val lastErrorCode: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): WtsTestSessionDiagnosticsData {
+      val joined = pigeonVar_list[0] as Boolean
+      val compatible = pigeonVar_list[1] as Boolean
+      val checks = pigeonVar_list[2] as List<WtsTestSessionCheckData>
+      val pendingSignals = pigeonVar_list[3] as Long
+      val sessionId = pigeonVar_list[4] as String?
+      val expiresAt = pigeonVar_list[5] as String?
+      val requiredSdkVersion = pigeonVar_list[6] as String?
+      val lastErrorCode = pigeonVar_list[7] as String?
+      return WtsTestSessionDiagnosticsData(joined, compatible, checks, pendingSignals, sessionId, expiresAt, requiredSdkVersion, lastErrorCode)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      joined,
+      compatible,
+      checks,
+      pendingSignals,
+      sessionId,
+      expiresAt,
+      requiredSdkVersion,
+      lastErrorCode,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as WtsTestSessionDiagnosticsData
+    return WtsMessagesPigeonUtils.deepEquals(this.joined, other.joined) && WtsMessagesPigeonUtils.deepEquals(this.compatible, other.compatible) && WtsMessagesPigeonUtils.deepEquals(this.checks, other.checks) && WtsMessagesPigeonUtils.deepEquals(this.pendingSignals, other.pendingSignals) && WtsMessagesPigeonUtils.deepEquals(this.sessionId, other.sessionId) && WtsMessagesPigeonUtils.deepEquals(this.expiresAt, other.expiresAt) && WtsMessagesPigeonUtils.deepEquals(this.requiredSdkVersion, other.requiredSdkVersion) && WtsMessagesPigeonUtils.deepEquals(this.lastErrorCode, other.lastErrorCode)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.joined)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.compatible)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.checks)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.pendingSignals)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.sessionId)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.expiresAt)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.requiredSdkVersion)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.lastErrorCode)
+    return result
+  }
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class WtsTestSessionProbeLinkData (
+  val id: String,
+  val path: String,
+  val parametersJson: String
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): WtsTestSessionProbeLinkData {
+      val id = pigeonVar_list[0] as String
+      val path = pigeonVar_list[1] as String
+      val parametersJson = pigeonVar_list[2] as String
+      return WtsTestSessionProbeLinkData(id, path, parametersJson)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      id,
+      path,
+      parametersJson,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as WtsTestSessionProbeLinkData
+    return WtsMessagesPigeonUtils.deepEquals(this.id, other.id) && WtsMessagesPigeonUtils.deepEquals(this.path, other.path) && WtsMessagesPigeonUtils.deepEquals(this.parametersJson, other.parametersJson)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.id)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.path)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.parametersJson)
+    return result
+  }
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class WtsTestSessionProbeData (
+  val match: Boolean,
+  val status: String,
+  val code: String,
+  val originalUrl: String,
+  val fallbackUrl: String,
+  val link: WtsTestSessionProbeLinkData? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): WtsTestSessionProbeData {
+      val match = pigeonVar_list[0] as Boolean
+      val status = pigeonVar_list[1] as String
+      val code = pigeonVar_list[2] as String
+      val originalUrl = pigeonVar_list[3] as String
+      val fallbackUrl = pigeonVar_list[4] as String
+      val link = pigeonVar_list[5] as WtsTestSessionProbeLinkData?
+      return WtsTestSessionProbeData(match, status, code, originalUrl, fallbackUrl, link)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      match,
+      status,
+      code,
+      originalUrl,
+      fallbackUrl,
+      link,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as WtsTestSessionProbeData
+    return WtsMessagesPigeonUtils.deepEquals(this.match, other.match) && WtsMessagesPigeonUtils.deepEquals(this.status, other.status) && WtsMessagesPigeonUtils.deepEquals(this.code, other.code) && WtsMessagesPigeonUtils.deepEquals(this.originalUrl, other.originalUrl) && WtsMessagesPigeonUtils.deepEquals(this.fallbackUrl, other.fallbackUrl) && WtsMessagesPigeonUtils.deepEquals(this.link, other.link)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.match)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.status)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.code)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.originalUrl)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.fallbackUrl)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.link)
+    return result
+  }
+}
+
+/** Generated class from Pigeon that represents data sent in messages. */
+data class WtsTestSessionProbeRunData (
+  val accepted: Boolean,
+  val emitted: List<String>,
+  val skipped: List<String>,
+  val pendingSignals: Long,
+  val experienceDecisionJson: String? = null
+)
+ {
+  companion object {
+    fun fromList(pigeonVar_list: List<Any?>): WtsTestSessionProbeRunData {
+      val accepted = pigeonVar_list[0] as Boolean
+      val emitted = pigeonVar_list[1] as List<String>
+      val skipped = pigeonVar_list[2] as List<String>
+      val pendingSignals = pigeonVar_list[3] as Long
+      val experienceDecisionJson = pigeonVar_list[4] as String?
+      return WtsTestSessionProbeRunData(accepted, emitted, skipped, pendingSignals, experienceDecisionJson)
+    }
+  }
+  fun toList(): List<Any?> {
+    return listOf(
+      accepted,
+      emitted,
+      skipped,
+      pendingSignals,
+      experienceDecisionJson,
+    )
+  }
+  override fun equals(other: Any?): Boolean {
+    if (other == null || other.javaClass != javaClass) {
+      return false
+    }
+    if (this === other) {
+      return true
+    }
+    val other = other as WtsTestSessionProbeRunData
+    return WtsMessagesPigeonUtils.deepEquals(this.accepted, other.accepted) && WtsMessagesPigeonUtils.deepEquals(this.emitted, other.emitted) && WtsMessagesPigeonUtils.deepEquals(this.skipped, other.skipped) && WtsMessagesPigeonUtils.deepEquals(this.pendingSignals, other.pendingSignals) && WtsMessagesPigeonUtils.deepEquals(this.experienceDecisionJson, other.experienceDecisionJson)
+  }
+
+  override fun hashCode(): Int {
+    var result = javaClass.hashCode()
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.accepted)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.emitted)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.skipped)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.pendingSignals)
+    result = 31 * result + WtsMessagesPigeonUtils.deepHash(this.experienceDecisionJson)
+    return result
+  }
+}
 private open class WtsMessagesPigeonCodec : StandardMessageCodec() {
   override fun readValueOfType(type: Byte, buffer: ByteBuffer): Any? {
     return when (type) {
@@ -845,6 +1165,36 @@ private open class WtsMessagesPigeonCodec : StandardMessageCodec() {
           WtsExperienceData.fromList(it)
         }
       }
+      141.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          WtsTestSessionCheckData.fromList(it)
+        }
+      }
+      142.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          WtsTestSessionJoinData.fromList(it)
+        }
+      }
+      143.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          WtsTestSessionDiagnosticsData.fromList(it)
+        }
+      }
+      144.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          WtsTestSessionProbeLinkData.fromList(it)
+        }
+      }
+      145.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          WtsTestSessionProbeData.fromList(it)
+        }
+      }
+      146.toByte() -> {
+        return (readValue(buffer) as? List<Any?>)?.let {
+          WtsTestSessionProbeRunData.fromList(it)
+        }
+      }
       else -> super.readValueOfType(type, buffer)
     }
   }
@@ -896,6 +1246,30 @@ private open class WtsMessagesPigeonCodec : StandardMessageCodec() {
       }
       is WtsExperienceData -> {
         stream.write(140)
+        writeValue(stream, value.toList())
+      }
+      is WtsTestSessionCheckData -> {
+        stream.write(141)
+        writeValue(stream, value.toList())
+      }
+      is WtsTestSessionJoinData -> {
+        stream.write(142)
+        writeValue(stream, value.toList())
+      }
+      is WtsTestSessionDiagnosticsData -> {
+        stream.write(143)
+        writeValue(stream, value.toList())
+      }
+      is WtsTestSessionProbeLinkData -> {
+        stream.write(144)
+        writeValue(stream, value.toList())
+      }
+      is WtsTestSessionProbeData -> {
+        stream.write(145)
+        writeValue(stream, value.toList())
+      }
+      is WtsTestSessionProbeRunData -> {
+        stream.write(146)
         writeValue(stream, value.toList())
       }
       else -> super.writeValue(stream, value)
@@ -963,6 +1337,12 @@ interface WtsHostApi {
   fun presentNextExperience(callback: (Result<Boolean>) -> Unit)
   fun dismissCurrentExperience(callback: (Result<Boolean>) -> Unit)
   fun getExperienceDiagnostics(callback: (Result<WtsExperienceDiagnosticsData>) -> Unit)
+  fun joinTestSession(pairing: String, callback: (Result<WtsTestSessionJoinData>) -> Unit)
+  fun leaveTestSession(callback: (Result<Boolean>) -> Unit)
+  fun getTestSessionDiagnostics(callback: (Result<WtsTestSessionDiagnosticsData>) -> Unit)
+  fun probeTestSessionUrl(url: String, callback: (Result<WtsTestSessionProbeData>) -> Unit)
+  fun runTestSessionProbes(callback: (Result<WtsTestSessionProbeRunData>) -> Unit)
+  fun reportTestSessionExperienceInteraction(interaction: String, callback: (Result<Boolean>) -> Unit)
   fun flush(callback: (Result<Unit>) -> Unit)
 
   companion object {
@@ -1228,6 +1608,120 @@ interface WtsHostApi {
         if (api != null) {
           channel.setMessageHandler { _, reply ->
             api.getExperienceDiagnostics{ result: Result<WtsExperienceDiagnosticsData> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(WtsMessagesPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(WtsMessagesPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.wts_sdk.WtsHostApi.joinTestSession$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val pairingArg = args[0] as String
+            api.joinTestSession(pairingArg) { result: Result<WtsTestSessionJoinData> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(WtsMessagesPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(WtsMessagesPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.wts_sdk.WtsHostApi.leaveTestSession$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            api.leaveTestSession{ result: Result<Boolean> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(WtsMessagesPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(WtsMessagesPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.wts_sdk.WtsHostApi.getTestSessionDiagnostics$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            api.getTestSessionDiagnostics{ result: Result<WtsTestSessionDiagnosticsData> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(WtsMessagesPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(WtsMessagesPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.wts_sdk.WtsHostApi.probeTestSessionUrl$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val urlArg = args[0] as String
+            api.probeTestSessionUrl(urlArg) { result: Result<WtsTestSessionProbeData> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(WtsMessagesPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(WtsMessagesPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.wts_sdk.WtsHostApi.runTestSessionProbes$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { _, reply ->
+            api.runTestSessionProbes{ result: Result<WtsTestSessionProbeRunData> ->
+              val error = result.exceptionOrNull()
+              if (error != null) {
+                reply.reply(WtsMessagesPigeonUtils.wrapError(error))
+              } else {
+                val data = result.getOrNull()
+                reply.reply(WtsMessagesPigeonUtils.wrapResult(data))
+              }
+            }
+          }
+        } else {
+          channel.setMessageHandler(null)
+        }
+      }
+      run {
+        val channel = BasicMessageChannel<Any?>(binaryMessenger, "dev.flutter.pigeon.wts_sdk.WtsHostApi.reportTestSessionExperienceInteraction$separatedMessageChannelSuffix", codec)
+        if (api != null) {
+          channel.setMessageHandler { message, reply ->
+            val args = message as List<Any?>
+            val interactionArg = args[0] as String
+            api.reportTestSessionExperienceInteraction(interactionArg) { result: Result<Boolean> ->
               val error = result.exceptionOrNull()
               if (error != null) {
                 reply.reply(WtsMessagesPigeonUtils.wrapError(error))

@@ -2,13 +2,18 @@
 
 Official Flutter wrapper for the wts.is Swift and Android SDKs. Generated Pigeon channels preserve scalar parameter types and revenue precision; networking, install identity and event persistence stay in the native cores.
 
-> `0.3.0-alpha.1` · Mobile Protocol V3 + Identity V1 + Experiences V1 · Flutter 3.35+ · iOS 15+ · Android API 23+
+> `0.3.0-alpha.1` source line · Mobile Protocol V3 + Identity V1 + Experiences V1 + SDK Test Session V1 · Flutter 3.35+ · iOS 15+ · Android API 23+
+
+> **Release note:** SDK Test & Validate APIs below require a matching published
+> `wts_sdk` release **and** matching published Swift/Android core releases.
+> This document does not claim that `0.3.0-alpha.1` is already published on
+> pub.dev or either native registry.
 
 ## Install
 
 ```yaml
 dependencies:
-  wts_sdk: 0.3.0-alpha.1
+  wts_sdk: <matching-published-version>
 ```
 
 ## Configure and handle links
@@ -95,6 +100,60 @@ For an unpublished device test, copy
 test panel for the matching Mobile App. The random source-scoped token contains
 no install, user, or profile identifier, and test traffic is excluded from
 customer analytics and usage.
+
+## SDK Test & Validate
+
+SDK Test & Validate is a dashboard-issued, short-lived validation session. It
+uses an isolated bounded retry queue; probes never create production events,
+identities, attribution, or Experience interactions. Do not hardcode, log, or
+persist its pairing URL or token outside the SDK.
+
+The dashboard QR code uses this canonical form:
+
+```text
+https://<mobile-app-host>/_wts/test/pair?pairing=<dashboard-issued-token>
+```
+
+Recognize that route before your normal deep-link path. Join the test session
+first, then return without calling `handle` for the pairing URL:
+
+```dart
+Future<void> onIncomingUrl(Uri uri) async {
+  if (uri.scheme == 'https' && uri.path == '/_wts/test/pair') {
+    final joined = await WtsSdk.joinTestSession(uri.toString());
+    showSdkTestChecks(joined.checks);
+    return;
+  }
+
+  // Normal production behavior stays unchanged.
+  final link = await WtsSdk.handle(uri);
+  if (allowedRoutes.contains(link.path)) {
+    router.go(link.path, extra: link.parameters);
+  }
+}
+```
+
+Use the dashboard-selected plan and inspect its isolated status without
+creating analytics:
+
+```dart
+final diagnostics = await WtsSdk.getTestSessionDiagnostics();
+final probes = await WtsSdk.runTestSessionProbes();
+
+// A ready decision is a test-only, manual preview. It is not delivered to the
+// normal Experiences renderer.
+if (probes.experienceDecision?.outcome == 'ready') {
+  await presentTestExperiencePreview(probes.experienceDecision!);
+  await WtsSdk.reportTestSessionExperienceInteraction('impression');
+}
+```
+
+Report `'action'` only after the corresponding real manual test action. It is
+accepted only after the isolated decision is ready; production Experience
+lifecycle signals are never copied into this transport. Use
+`probeTestSessionUrl(uri)` for an event-free resolver check and
+`leaveTestSession()` when the operator finishes. Expiry also clears the
+session.
 
 ## Consent-aware identity
 

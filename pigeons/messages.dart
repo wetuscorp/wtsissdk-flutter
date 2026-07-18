@@ -184,6 +184,106 @@ class WtsExperienceData {
   String? assetUrl;
 }
 
+class WtsTestSessionCheckData {
+  WtsTestSessionCheckData({
+    required this.key,
+    required this.status,
+    this.code,
+    this.message,
+  });
+  String key;
+  String status;
+  String? code;
+  String? message;
+}
+
+class WtsTestSessionJoinData {
+  WtsTestSessionJoinData({
+    required this.accepted,
+    required this.joined,
+    required this.compatible,
+    required this.checks,
+    this.requiredSdkVersion,
+    this.sessionId,
+    this.expiresAt,
+    this.testProfileExternalUserId,
+    this.errorCode,
+  });
+  bool accepted;
+  bool joined;
+  bool compatible;
+  List<WtsTestSessionCheckData> checks;
+  String? requiredSdkVersion;
+  String? sessionId;
+  String? expiresAt;
+  String? testProfileExternalUserId;
+  String? errorCode;
+}
+
+class WtsTestSessionDiagnosticsData {
+  WtsTestSessionDiagnosticsData({
+    required this.joined,
+    required this.compatible,
+    required this.checks,
+    required this.pendingSignals,
+    this.sessionId,
+    this.expiresAt,
+    this.requiredSdkVersion,
+    this.lastErrorCode,
+  });
+  bool joined;
+  bool compatible;
+  List<WtsTestSessionCheckData> checks;
+  int pendingSignals;
+  String? sessionId;
+  String? expiresAt;
+  String? requiredSdkVersion;
+  String? lastErrorCode;
+}
+
+class WtsTestSessionProbeLinkData {
+  WtsTestSessionProbeLinkData({
+    required this.id,
+    required this.path,
+    required this.parametersJson,
+  });
+  String id;
+  String path;
+  String parametersJson;
+}
+
+class WtsTestSessionProbeData {
+  WtsTestSessionProbeData({
+    required this.match,
+    required this.status,
+    required this.code,
+    required this.originalUrl,
+    required this.fallbackUrl,
+    this.link,
+  });
+  bool match;
+  String status;
+  String code;
+  String originalUrl;
+  String fallbackUrl;
+  WtsTestSessionProbeLinkData? link;
+}
+
+class WtsTestSessionProbeRunData {
+  WtsTestSessionProbeRunData({
+    required this.accepted,
+    required this.emitted,
+    required this.skipped,
+    required this.pendingSignals,
+    this.experienceDecisionJson,
+  });
+  bool accepted;
+  List<String> emitted;
+  List<String> skipped;
+  int pendingSignals;
+  String? experienceDecisionJson;
+}
+
 @FlutterApi()
 abstract class WtsFlutterApi {
   void onExperienceAvailable(WtsExperienceData experience);
@@ -242,6 +342,24 @@ abstract class WtsHostApi {
 
   @async
   WtsExperienceDiagnosticsData getExperienceDiagnostics();
+
+  @async
+  WtsTestSessionJoinData joinTestSession(String pairing);
+
+  @async
+  bool leaveTestSession();
+
+  @async
+  WtsTestSessionDiagnosticsData getTestSessionDiagnostics();
+
+  @async
+  WtsTestSessionProbeData probeTestSessionUrl(String url);
+
+  @async
+  WtsTestSessionProbeRunData runTestSessionProbes();
+
+  @async
+  bool reportTestSessionExperienceInteraction(String interaction);
 
   @async
   void flush();
