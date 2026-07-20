@@ -1,3 +1,16 @@
+## 0.5.0-alpha.1
+
+- Replaced the separate analytics/profile and Experiences consent controls with
+  the persisted `pending`, `granted`, and `denied` unified consent model.
+- Added automatic Experiences Protocol V2 delivery through the native Android
+  and Swift renderers, including diagnostics and handled/unhandled advanced
+  action outcomes.
+- Pins Android `co.wetus:wts-sdk:0.5.0-alpha.1` and iOS `WtsSDK
+  0.5.0-alpha.1` exactly for the coordinated release.
+- Clears legacy 0.4 wrapper state on first launch and keeps analytics,
+  identity, attribution, Experiences, and test-session storage/network closed
+  until consent is granted.
+
 ## 0.4.0-alpha.1
 
 - Pins Android `co.wetus:wts-sdk:0.4.0-alpha.1` and iOS `WtsSDK
