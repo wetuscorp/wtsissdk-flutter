@@ -13,15 +13,15 @@ class WtsDeepLink {
   const WtsDeepLink({
     required this.path,
     required this.parameters,
-    required this.linkId,
-    required this.attributionId,
+    this.linkId,
+    this.attributionId,
     required this.isDeferred,
   });
 
   final String path;
   final Map<String, Object> parameters;
-  final String linkId;
-  final String attributionId;
+  final String? linkId;
+  final String? attributionId;
   final bool isDeferred;
 }
 
@@ -69,37 +69,7 @@ class WtsReportedAttribution {
   final String? externalRef;
 }
 
-enum WtsExperienceConsent { pending, contextual, personalized, denied }
-
-enum WtsExperienceRenderMode { automatic, manual }
-
-class WtsExperienceOptions {
-  const WtsExperienceOptions({
-    this.enabled = false,
-    this.renderMode = WtsExperienceRenderMode.automatic,
-    this.allowedInternalRoutes = const {},
-    this.allowedCallbackKeys = const {},
-    this.allowedDeepLinkHosts = const {},
-    this.allowedDeepLinkSchemes = const {},
-    this.allowedWebOrigins = const {},
-    this.manifestVerificationKeys = const {},
-  });
-
-  final bool enabled;
-  final WtsExperienceRenderMode renderMode;
-  final Set<String> allowedInternalRoutes;
-  final Set<String> allowedCallbackKeys;
-  final Set<String> allowedDeepLinkHosts;
-  final Set<String> allowedDeepLinkSchemes;
-  final Set<String> allowedWebOrigins;
-
-  /// Ed25519 public keys keyed by the Experience manifest key identifier.
-  ///
-  /// Values must be base64-encoded SPKI DER public keys. The native SDK
-  /// verifies the signed manifest payload with the key whose identifier is
-  /// returned by the collector; it never trusts the unsigned outer manifest.
-  final Map<String, String> manifestVerificationKeys;
-}
+enum WtsConsentState { pending, granted, denied }
 
 class WtsExperienceDiagnostics {
   const WtsExperienceDiagnostics({
@@ -112,7 +82,7 @@ class WtsExperienceDiagnostics {
   });
 
   final bool enabled;
-  final WtsExperienceConsent consent;
+  final WtsConsentState consent;
   final int queued;
   final bool presenting;
   final String testDeviceToken;
@@ -177,80 +147,7 @@ class WtsExperience {
   final Uri? assetUrl;
 }
 
-/// Content that a host application can render for a manual Experience.
-///
-/// Delivery identifiers stay inside the SDK. Use the accompanying
-/// [WtsExperiencePresentationHandle] for lifecycle acknowledgements instead of
-/// deriving identifiers from this content.
-class WtsExperienceManualContent {
-  const WtsExperienceManualContent({
-    required this.campaignId,
-    required this.campaignVersionId,
-    required this.assignmentId,
-    required this.variantId,
-    required this.placement,
-    required this.priority,
-    required this.translations,
-    required this.closeable,
-    required this.themePreset,
-    required this.delaySeconds,
-    this.autoCloseSeconds,
-    this.assetUrl,
-  });
-
-  final String campaignId;
-  final String campaignVersionId;
-  final String assignmentId;
-  final String variantId;
-  final String placement;
-  final int priority;
-  final Map<String, WtsExperienceTranslation> translations;
-  final bool closeable;
-  final String themePreset;
-  final double delaySeconds;
-  final double? autoCloseSeconds;
-  final Uri? assetUrl;
-}
-
-/// An opaque, SDK-issued handle for a manually presented Experience.
-///
-/// Keep the handle only for the lifecycle of the presentation. Its value is
-/// intentionally not a campaign identifier and must not be persisted.
-class WtsExperiencePresentationHandle {
-  const WtsExperiencePresentationHandle._(this._exposureId);
-
-  final String _exposureId;
-}
-
-/// A manual Experience decision and the lifecycle handle that belongs to it.
-class WtsExperienceManualPresentation {
-  const WtsExperienceManualPresentation({
-    required this.experience,
-    required this.handle,
-  });
-
-  final WtsExperienceManualContent experience;
-  final WtsExperiencePresentationHandle handle;
-}
-
-enum WtsExperienceDismissReason { dismissed, autoClosed, renderFailed }
-
-class WtsExperienceLifecycleOutcome {
-  const WtsExperienceLifecycleOutcome({
-    required this.accepted,
-    required this.idempotent,
-    this.code,
-  });
-
-  final bool accepted;
-  final bool idempotent;
-  final String? code;
-}
-
-typedef WtsExperienceAvailableHandler = void Function(
-  WtsExperienceManualPresentation presentation,
-);
-typedef WtsExperienceActionHandler = void Function(
+typedef WtsExperienceActionHandler = bool Function(
   WtsExperience experience,
   WtsExperienceAction action,
 );
@@ -419,8 +316,6 @@ Map<String, Object?>? _nullableObject(Object? value) {
 class WtsSdk {
   WtsSdk._();
   static WtsPlatform _platform = PigeonWtsPlatform();
-  static final Set<WtsExperienceAvailableHandler> _experienceAvailableHandlers =
-      <WtsExperienceAvailableHandler>{};
   static final Set<WtsExperienceActionHandler> _experienceActionHandlers =
       <WtsExperienceActionHandler>{};
   static bool _experienceCallbacksConfigured = false;
@@ -432,11 +327,11 @@ class WtsSdk {
     required String appKey,
     String? apiBaseUrl,
     String? collectorBaseUrl,
-    WtsExperienceOptions experiences = const WtsExperienceOptions(),
   }) {
     if (_platform is PigeonWtsPlatform) _ensureExperienceCallbacks();
-    return _guard(() =>
-        _platform.configure(appKey, apiBaseUrl, collectorBaseUrl, experiences));
+    return _guard(
+      () => _platform.configure(appKey, apiBaseUrl, collectorBaseUrl),
+    );
   }
 
   static Future<WtsDeepLink> handle(Uri uri) =>
@@ -445,8 +340,19 @@ class WtsSdk {
   static Future<WtsDeepLink?> getDeferredDeepLink() =>
       _guard(_platform.getDeferredDeepLink);
 
-  static Future<void> setProfileConsent(bool granted) =>
-      _guard(() => _platform.setProfileConsent(granted));
+  static Future<void> setConsent(WtsConsentState consent) {
+    if (consent == WtsConsentState.pending) {
+      throw ArgumentError.value(
+        consent,
+        'consent',
+        'setConsent accepts only granted or denied.',
+      );
+    }
+    return _guard(() => _platform.setConsent(consent));
+  }
+
+  static Future<WtsConsentState> getConsentState() =>
+      _guard(_platform.getConsentState);
 
   static Future<void> identify(
     String externalUserId, {
@@ -489,61 +395,11 @@ class WtsSdk {
     return _guard(() => _platform.screen(name.trim(), properties));
   }
 
-  static Future<void> setExperienceConsent(WtsExperienceConsent consent) =>
-      _guard(() => _platform.setExperienceConsent(consent));
-
-  static Future<bool> presentNextExperience() =>
-      _guard(_platform.presentNextExperience);
-
   static Future<bool> dismissCurrentExperience() =>
       _guard(_platform.dismissCurrentExperience);
 
   static Future<WtsExperienceDiagnostics> getExperienceDiagnostics() =>
       _guard(_platform.getExperienceDiagnostics);
-
-  /// Records that the host application began rendering a manual Experience.
-  static Future<WtsExperienceLifecycleOutcome> acknowledgeExperienceRender(
-    WtsExperiencePresentationHandle handle,
-  ) =>
-      _guard(() => _platform.acknowledgeExperienceRender(handle));
-
-  /// Records a verified impression for a manually rendered Experience.
-  static Future<WtsExperienceLifecycleOutcome> acknowledgeExperienceImpression(
-    WtsExperiencePresentationHandle handle,
-  ) =>
-      _guard(() => _platform.acknowledgeExperienceImpression(handle));
-
-  /// Records an action selected by the user in a manual Experience.
-  static Future<WtsExperienceLifecycleOutcome> reportExperienceAction(
-    WtsExperiencePresentationHandle handle,
-    String actionId,
-  ) {
-    if (actionId.trim().isEmpty) {
-      throw ArgumentError.value(actionId, 'actionId', 'Expected an action ID.');
-    }
-    return _guard(() => _platform.reportExperienceAction(handle, actionId));
-  }
-
-  /// Completes a manual Experience lifecycle without an action.
-  static Future<WtsExperienceLifecycleOutcome> dismissExperience(
-    WtsExperiencePresentationHandle handle, {
-    WtsExperienceDismissReason reason = WtsExperienceDismissReason.dismissed,
-    String? failureCode,
-  }) =>
-      _guard(
-        () => _platform.dismissExperience(handle, reason, failureCode),
-      );
-
-  /// Convenience for reporting a manual renderer failure.
-  static Future<WtsExperienceLifecycleOutcome> failExperiencePresentation(
-    WtsExperiencePresentationHandle handle,
-    String failureCode,
-  ) =>
-      dismissExperience(
-        handle,
-        reason: WtsExperienceDismissReason.renderFailed,
-        failureCode: failureCode,
-      );
 
   static Future<WtsTestSessionJoinResult> joinTestSession(String pairing) {
     if (pairing.trim().isEmpty) {
@@ -564,25 +420,6 @@ class WtsSdk {
 
   static Future<WtsTestSessionProbeRunResult> runTestSessionProbes() =>
       _guard(_platform.runTestSessionProbes);
-
-  static Future<bool> reportTestSessionExperienceInteraction(
-    String interaction,
-  ) {
-    if (interaction != 'impression' && interaction != 'action') {
-      throw ArgumentError.value(
-          interaction, 'interaction', 'Expected impression or action.');
-    }
-    return _guard(
-        () => _platform.reportTestSessionExperienceInteraction(interaction));
-  }
-
-  static WtsUnsubscribe onExperienceAvailable(
-    WtsExperienceAvailableHandler handler,
-  ) {
-    if (_platform is PigeonWtsPlatform) _ensureExperienceCallbacks();
-    _experienceAvailableHandlers.add(handler);
-    return () => _experienceAvailableHandlers.remove(handler);
-  }
 
   static WtsUnsubscribe onExperienceAction(
     WtsExperienceActionHandler handler,
@@ -690,18 +527,7 @@ class WtsSdk {
 
 class _WtsFlutterCallbacks implements WtsFlutterApi {
   @override
-  void onExperienceAvailable(WtsExperienceManualPresentationData presentation) {
-    final WtsExperienceManualPresentation value =
-        _manualPresentationFromData(presentation);
-    for (final WtsExperienceAvailableHandler handler
-        in List<WtsExperienceAvailableHandler>.of(
-            WtsSdk._experienceAvailableHandlers)) {
-      handler(value);
-    }
-  }
-
-  @override
-  void onExperienceAction(
+  bool onExperienceAction(
     WtsExperienceData experience,
     WtsExperienceActionData action,
   ) {
@@ -710,50 +536,17 @@ class _WtsFlutterCallbacks implements WtsFlutterApi {
     for (final WtsExperienceActionHandler handler
         in List<WtsExperienceActionHandler>.of(
             WtsSdk._experienceActionHandlers)) {
-      handler(value, actionValue);
+      try {
+        if (handler(value, actionValue)) return true;
+      } on Object {
+        // A host callback failure is an unhandled action by contract.
+      }
     }
+    return false;
   }
 }
 
 WtsExperience _experienceFromData(WtsExperienceData data) => WtsExperience(
-      campaignId: data.campaignId,
-      campaignVersionId: data.campaignVersionId,
-      assignmentId: data.assignmentId,
-      variantId: data.variantId,
-      placement: data.placement,
-      priority: data.priority,
-      translations: <String, WtsExperienceTranslation>{
-        for (final WtsExperienceTranslationData item in data.translations)
-          item.locale: WtsExperienceTranslation(
-            title: item.title,
-            description: item.description,
-            primaryAction: item.primaryAction == null
-                ? null
-                : _actionFromData(item.primaryAction!),
-            secondaryAction: item.secondaryAction == null
-                ? null
-                : _actionFromData(item.secondaryAction!),
-          ),
-      },
-      closeable: data.closeable,
-      themePreset: data.themePreset,
-      delaySeconds: data.delaySeconds,
-      autoCloseSeconds: data.autoCloseSeconds,
-      assetUrl: data.assetUrl == null ? null : Uri.tryParse(data.assetUrl!),
-    );
-
-WtsExperienceManualPresentation _manualPresentationFromData(
-  WtsExperienceManualPresentationData data,
-) =>
-    WtsExperienceManualPresentation(
-      experience: _manualExperienceContentFromData(data.experience),
-      handle: WtsExperiencePresentationHandle._(data.handle.exposureId),
-    );
-
-WtsExperienceManualContent _manualExperienceContentFromData(
-  WtsExperienceData data,
-) =>
-    WtsExperienceManualContent(
       campaignId: data.campaignId,
       campaignVersionId: data.campaignVersionId,
       assignmentId: data.assignmentId,
@@ -793,11 +586,11 @@ abstract interface class WtsPlatform {
     String appKey,
     String? apiBaseUrl,
     String? collectorBaseUrl,
-    WtsExperienceOptions experiences,
   );
   Future<WtsDeepLink> handle(String url);
   Future<WtsDeepLink?> getDeferredDeepLink();
-  Future<void> setProfileConsent(bool granted);
+  Future<void> setConsent(WtsConsentState consent);
+  Future<WtsConsentState> getConsentState();
   Future<void> identify(String externalUserId, Map<String, Object> attributes);
   Future<void> updateUser(WtsUserUpdate update);
   Future<void> setReportedAttribution(WtsReportedAttribution attribution);
@@ -809,31 +602,13 @@ abstract interface class WtsPlatform {
     String? linkId,
   );
   Future<void> screen(String name, Map<String, Object> properties);
-  Future<void> setExperienceConsent(WtsExperienceConsent consent);
-  Future<bool> presentNextExperience();
   Future<bool> dismissCurrentExperience();
   Future<WtsExperienceDiagnostics> getExperienceDiagnostics();
-  Future<WtsExperienceLifecycleOutcome> acknowledgeExperienceRender(
-    WtsExperiencePresentationHandle handle,
-  );
-  Future<WtsExperienceLifecycleOutcome> acknowledgeExperienceImpression(
-    WtsExperiencePresentationHandle handle,
-  );
-  Future<WtsExperienceLifecycleOutcome> reportExperienceAction(
-    WtsExperiencePresentationHandle handle,
-    String actionId,
-  );
-  Future<WtsExperienceLifecycleOutcome> dismissExperience(
-    WtsExperiencePresentationHandle handle,
-    WtsExperienceDismissReason reason,
-    String? failureCode,
-  );
   Future<WtsTestSessionJoinResult> joinTestSession(String pairing);
   Future<bool> leaveTestSession();
   Future<WtsTestSessionDiagnostics> getTestSessionDiagnostics();
   Future<WtsTestSessionProbeResult> probeTestSessionUrl(String url);
   Future<WtsTestSessionProbeRunResult> runTestSessionProbes();
-  Future<bool> reportTestSessionExperienceInteraction(String interaction);
   Future<void> flush();
 }
 
@@ -845,28 +620,11 @@ class PigeonWtsPlatform implements WtsPlatform {
     String appKey,
     String? apiBaseUrl,
     String? collectorBaseUrl,
-    WtsExperienceOptions experiences,
   ) =>
       _api.configure(WtsConfigurationData(
         appKey: appKey,
         apiBaseUrl: apiBaseUrl,
         collectorBaseUrl: collectorBaseUrl,
-        experiencesEnabled: experiences.enabled,
-        experienceRenderMode: experiences.renderMode.name,
-        allowedInternalRoutes: experiences.allowedInternalRoutes.toList(),
-        allowedCallbackKeys: experiences.allowedCallbackKeys.toList(),
-        allowedDeepLinkHosts: experiences.allowedDeepLinkHosts.toList(),
-        allowedDeepLinkSchemes: experiences.allowedDeepLinkSchemes.toList(),
-        allowedWebOrigins: experiences.allowedWebOrigins.toList(),
-        manifestVerificationKeys: experiences.manifestVerificationKeys.entries
-            .map(
-              (MapEntry<String, String> entry) =>
-                  WtsManifestVerificationKeyData(
-                kid: entry.key,
-                value: entry.value,
-              ),
-            )
-            .toList(growable: false),
       ));
 
   @override
@@ -880,8 +638,12 @@ class PigeonWtsPlatform implements WtsPlatform {
   }
 
   @override
-  Future<void> setProfileConsent(bool granted) =>
-      _api.setProfileConsent(granted);
+  Future<void> setConsent(WtsConsentState consent) =>
+      _api.setConsent(consent.name);
+
+  @override
+  Future<WtsConsentState> getConsentState() async =>
+      WtsConsentState.values.byName(await _api.getConsentState());
 
   @override
   Future<void> identify(
@@ -947,13 +709,6 @@ class PigeonWtsPlatform implements WtsPlatform {
       );
 
   @override
-  Future<void> setExperienceConsent(WtsExperienceConsent consent) async {
-    await _api.setExperienceConsent(consent.name);
-  }
-
-  @override
-  Future<bool> presentNextExperience() => _api.presentNextExperience();
-
   @override
   Future<bool> dismissCurrentExperience() => _api.dismissCurrentExperience();
 
@@ -963,59 +718,13 @@ class PigeonWtsPlatform implements WtsPlatform {
         await _api.getExperienceDiagnostics();
     return WtsExperienceDiagnostics(
       enabled: data.enabled,
-      consent: WtsExperienceConsent.values.byName(data.consent),
+      consent: WtsConsentState.values.byName(data.consent),
       queued: data.queued,
       presenting: data.presenting,
       testDeviceToken: data.testDeviceToken,
       lastErrorCode: data.lastErrorCode,
     );
   }
-
-  @override
-  Future<WtsExperienceLifecycleOutcome> acknowledgeExperienceRender(
-    WtsExperiencePresentationHandle handle,
-  ) async =>
-      _experienceLifecycleOutcomeFromData(
-        await _api.acknowledgeExperienceRender(
-          WtsExperiencePresentationHandleData(exposureId: handle._exposureId),
-        ),
-      );
-
-  @override
-  Future<WtsExperienceLifecycleOutcome> acknowledgeExperienceImpression(
-    WtsExperiencePresentationHandle handle,
-  ) async =>
-      _experienceLifecycleOutcomeFromData(
-        await _api.acknowledgeExperienceImpression(
-          WtsExperiencePresentationHandleData(exposureId: handle._exposureId),
-        ),
-      );
-
-  @override
-  Future<WtsExperienceLifecycleOutcome> reportExperienceAction(
-    WtsExperiencePresentationHandle handle,
-    String actionId,
-  ) async =>
-      _experienceLifecycleOutcomeFromData(
-        await _api.reportExperienceAction(
-          WtsExperiencePresentationHandleData(exposureId: handle._exposureId),
-          actionId,
-        ),
-      );
-
-  @override
-  Future<WtsExperienceLifecycleOutcome> dismissExperience(
-    WtsExperiencePresentationHandle handle,
-    WtsExperienceDismissReason reason,
-    String? failureCode,
-  ) async =>
-      _experienceLifecycleOutcomeFromData(
-        await _api.dismissExperience(
-          WtsExperiencePresentationHandleData(exposureId: handle._exposureId),
-          reason.name,
-          failureCode,
-        ),
-      );
 
   @override
   Future<WtsTestSessionJoinResult> joinTestSession(String pairing) async {
@@ -1096,20 +805,7 @@ class PigeonWtsPlatform implements WtsPlatform {
   }
 
   @override
-  Future<bool> reportTestSessionExperienceInteraction(String interaction) =>
-      _api.reportTestSessionExperienceInteraction(interaction);
-
-  @override
   Future<void> flush() => _api.flush();
-
-  static WtsExperienceLifecycleOutcome _experienceLifecycleOutcomeFromData(
-    WtsExperienceLifecycleOutcomeData data,
-  ) =>
-      WtsExperienceLifecycleOutcome(
-        accepted: data.accepted,
-        idempotent: data.idempotent,
-        code: data.code,
-      );
 
   static WtsDeepLink _fromData(WtsDeepLinkData data) => WtsDeepLink(
         path: data.path,

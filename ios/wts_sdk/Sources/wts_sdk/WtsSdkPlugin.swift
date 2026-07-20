@@ -30,40 +30,17 @@ public final class WtsSdkPlugin: NSObject, FlutterPlugin, WtsHostApi {
                 if let value = configuration.collectorBaseUrl, let url = URL(string: value) {
                     options.collectorBaseURL = url
                 }
-                options.experiences = WtsExperienceOptions(
-                    enabled: configuration.experiencesEnabled,
-                    renderMode: configuration.experienceRenderMode == "manual"
-                        ? .manual
-                        : .automatic,
-                    manifestVerificationKeys: Dictionary(
-                        uniqueKeysWithValues: configuration.manifestVerificationKeys.map {
-                            ($0.kid, $0.value)
-                        }
-                    ),
-                    allowedInternalRoutes: Set(configuration.allowedInternalRoutes),
-                    allowedCallbackKeys: Set(configuration.allowedCallbackKeys),
-                    allowedDeepLinkHosts: Set(configuration.allowedDeepLinkHosts),
-                    allowedDeepLinkSchemes: Set(configuration.allowedDeepLinkSchemes),
-                    allowedWebOrigins: Set(configuration.allowedWebOrigins)
-                )
                 try await WtsSDK.shared.configure(appKey: configuration.appKey, options: options)
-                await WtsSDK.shared.onExperienceAvailable { [weak self] presentation in
-                    guard let self else { return }
-                    DispatchQueue.main.async {
-                        self.flutterApi.onExperienceAvailable(
-                            presentation: presentation.toData()
-                        ) { _ in }
-                    }
-                }
                 await WtsSDK.shared.onExperienceAction { [weak self] experience, action in
                     guard let self else { return false }
-                    DispatchQueue.main.async {
+                    return await withCheckedContinuation { continuation in
                         self.flutterApi.onExperienceAction(
                             experience: experience.toData(),
                             action: action.toData()
-                        ) { _ in }
+                        ) { result in
+                            continuation.resume(returning: (try? result.get()) ?? false)
+                        }
                     }
-                    return false
                 }
                 completion(.success(()))
             } catch { completion(.failure(platformError(error))) }
@@ -83,16 +60,27 @@ public final class WtsSdkPlugin: NSObject, FlutterPlugin, WtsHostApi {
         Task { completion(.success(await WtsSDK.shared.getDeferredDeepLink()?.toData())) }
     }
 
-    func setProfileConsent(
-        granted: Bool,
+    func setConsent(
+        consent: String,
         completion: @escaping (Result<Void, Error>) -> Void
     ) {
         Task {
             do {
-                try await WtsSDK.shared.setProfileConsent(granted ? .granted : .denied)
+                guard let value = WtsConsentState(rawValue: consent) else {
+                    throw PigeonError(
+                        code: "INVALID_CONSENT",
+                        message: "Unsupported consent value.",
+                        details: nil
+                    )
+                }
+                try await WtsSDK.shared.setConsent(value)
                 completion(.success(()))
             } catch { completion(.failure(platformError(error))) }
         }
+    }
+
+    func getConsentState(completion: @escaping (Result<String, Error>) -> Void) {
+        Task { completion(.success(await WtsSDK.shared.getConsentState().rawValue)) }
     }
 
     func identify(
@@ -206,33 +194,6 @@ public final class WtsSdkPlugin: NSObject, FlutterPlugin, WtsHostApi {
         }
     }
 
-    func setExperienceConsent(
-        consent: String,
-        completion: @escaping (Result<String, Error>) -> Void
-    ) {
-        Task {
-            do {
-                guard let value = WtsExperienceConsent(rawValue: consent) else {
-                    throw PigeonError(
-                        code: "INVALID_EXPERIENCE_CONSENT",
-                        message: "Unsupported experience consent value.",
-                        details: nil
-                    )
-                }
-                let result = try await WtsSDK.shared.setExperienceConsent(value)
-                completion(.success(String(describing: result)))
-            } catch { completion(.failure(platformError(error))) }
-        }
-    }
-
-    func presentNextExperience(
-        completion: @escaping (Result<Bool, Error>) -> Void
-    ) {
-        Task {
-            completion(.success(await WtsSDK.shared.presentNextExperience() != nil))
-        }
-    }
-
     func dismissCurrentExperience(
         completion: @escaping (Result<Bool, Error>) -> Void
     ) {
@@ -257,81 +218,6 @@ public final class WtsSdkPlugin: NSObject, FlutterPlugin, WtsHostApi {
                         testDeviceToken: value.testDeviceToken,
                         lastErrorCode: value.lastErrorCode
                     )
-                )
-            )
-        }
-    }
-
-    func acknowledgeExperienceRender(
-        handle: WtsExperiencePresentationHandleData,
-        completion: @escaping (Result<WtsExperienceLifecycleOutcomeData, Error>) -> Void
-    ) {
-        Task {
-            completion(
-                .success(
-                    (await WtsSDK.shared.acknowledgeExperienceRender(handle.toNative())).toData()
-                )
-            )
-        }
-    }
-
-    func acknowledgeExperienceImpression(
-        handle: WtsExperiencePresentationHandleData,
-        completion: @escaping (Result<WtsExperienceLifecycleOutcomeData, Error>) -> Void
-    ) {
-        Task {
-            completion(
-                .success(
-                    (await WtsSDK.shared.acknowledgeExperienceImpression(handle.toNative())).toData()
-                )
-            )
-        }
-    }
-
-    func reportExperienceAction(
-        handle: WtsExperiencePresentationHandleData,
-        actionId: String,
-        completion: @escaping (Result<WtsExperienceLifecycleOutcomeData, Error>) -> Void
-    ) {
-        Task {
-            completion(
-                .success(
-                    (await WtsSDK.shared.reportExperienceAction(
-                        handle.toNative(),
-                        actionId: actionId
-                    )).toData()
-                )
-            )
-        }
-    }
-
-    func dismissExperience(
-        handle: WtsExperiencePresentationHandleData,
-        reason: String,
-        failureCode: String?,
-        completion: @escaping (Result<WtsExperienceLifecycleOutcomeData, Error>) -> Void
-    ) {
-        let parsedReason: WtsExperienceDismissReason
-        switch reason {
-        case "dismissed": parsedReason = .dismissed
-        case "autoClosed": parsedReason = .autoClosed
-        case "renderFailed": parsedReason = .renderFailed
-        default:
-            completion(.failure(PigeonError(
-                code: "INVALID_EXPERIENCE_DISMISSAL_REASON",
-                message: "Unsupported Experience dismissal reason.",
-                details: nil
-            )))
-            return
-        }
-        Task {
-            completion(
-                .success(
-                    (await WtsSDK.shared.dismissExperience(
-                        handle.toNative(),
-                        reason: parsedReason,
-                        failureCode: failureCode
-                    )).toData()
                 )
             )
         }
@@ -380,27 +266,6 @@ public final class WtsSdkPlugin: NSObject, FlutterPlugin, WtsHostApi {
         Task {
             do { completion(.success(try await WtsSDK.shared.runTestSessionProbes().toData())) }
             catch { completion(.failure(platformError(error))) }
-        }
-    }
-
-    func reportTestSessionExperienceInteraction(
-        interaction: String,
-        completion: @escaping (Result<Bool, Error>) -> Void
-    ) {
-        Task {
-            let parsed: WtsTestSessionExperienceInteraction? = interaction == "impression"
-                ? WtsTestSessionExperienceInteraction.impression
-                : interaction == "action" ? .action : nil
-            guard let value = parsed
-            else {
-                completion(.failure(PigeonError(
-                    code: "INVALID_TEST_EXPERIENCE_INTERACTION",
-                    message: "Unsupported test Experience interaction.",
-                    details: nil
-                )))
-                return
-            }
-            completion(.success(await WtsSDK.shared.reportTestSessionExperienceInteraction(value)))
         }
     }
 
@@ -459,37 +324,6 @@ private extension WtsExperience {
             delaySeconds: content.delaySeconds,
             autoCloseSeconds: content.autoCloseSeconds,
             assetUrl: assetURL?.absoluteString
-        )
-    }
-}
-
-private extension WtsExperienceManualPresentation {
-    func toData() -> WtsExperienceManualPresentationData {
-        WtsExperienceManualPresentationData(
-            experience: experience.toData(),
-            handle: handle.toData()
-        )
-    }
-}
-
-private extension WtsExperiencePresentationHandle {
-    func toData() -> WtsExperiencePresentationHandleData {
-        WtsExperiencePresentationHandleData(exposureId: exposureId)
-    }
-}
-
-private extension WtsExperiencePresentationHandleData {
-    func toNative() -> WtsExperiencePresentationHandle {
-        WtsExperiencePresentationHandle(exposureId: exposureId)
-    }
-}
-
-private extension WtsExperienceLifecycleOutcome {
-    func toData() -> WtsExperienceLifecycleOutcomeData {
-        WtsExperienceLifecycleOutcomeData(
-            accepted: accepted,
-            idempotent: idempotent,
-            code: code
         )
     }
 }

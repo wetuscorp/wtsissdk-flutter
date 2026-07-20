@@ -1,240 +1,77 @@
-# wts_sdk
+# wts.is Flutter SDK
 
-Official Flutter wrapper for the wts.is Swift and Android SDKs. Generated Pigeon channels preserve scalar parameter types and revenue precision; networking, install identity and event persistence stay in the native cores.
+Official Flutter SDK for deep links, analytics, identity, and deployless native Experiences.
 
-> `0.4.0-alpha.1` · Mobile Protocol V3 + Identity V1 + Experiences V1 + SDK Test Session V1 · Flutter 3.35+ · iOS 15+ · Android API 23+
-
-> **Native-core compatibility:** `wts_sdk 0.4.0-alpha.1` pins Android
-> `co.wetus:wts-sdk:0.4.0-alpha.1` and iOS `WtsSDK 0.4.0-alpha.1` exactly.
-> Keep these companion native cores on the same version; do not override them
-> to an earlier or later release.
+> `0.5.0-alpha.1` · exact native pins: Android `co.wetus:wts-sdk:0.5.0-alpha.1`, iOS `WtsSDK 0.5.0-alpha.1` · Mobile V4 · Experiences V2 · Test Session V2
 
 ## Install
 
 ```yaml
 dependencies:
-  wts_sdk: 0.4.0-alpha.1
+  wts_sdk: 0.5.0-alpha.1
 ```
 
-Then run `flutter pub get`.
+## One-time integration
 
-## Configure and handle links
+Configure the public app/source key once. The host owns the consent UI; the SDK persists and restores the unified decision.
 
 ```dart
 await WtsSdk.configure(appKey: 'YOUR_PUBLIC_APP_KEY');
 
-Future<void> handle(Uri uri) async {
-  try {
-    final link = await WtsSdk.handle(uri);
-    if (allowedRoutes.contains(link.path)) {
-      router.go(link.path, extra: link.parameters);
-    }
-  } on WtsSdkException catch (error) {
-    if (error.fallbackUrl != null) await launchUrl(error.fallbackUrl!);
-  }
+switch (await WtsSdk.getConsentState()) {
+  case WtsConsentState.pending:
+    await showConsentUi();
+  case WtsConsentState.granted:
+  case WtsConsentState.denied:
 }
+
+await WtsSdk.setConsent(WtsConsentState.granted); // or denied
 ```
 
-Connect `handle` to your app lifecycle (`app_links`, Router, or the lifecycle package you already use). Configure Associated Domains on iOS and an auto-verified App Link intent filter on Android.
+`pending` and `denied` disable event, identity, attribution, Experience, and test-session storage/network. A data-minimized direct functional link resolve is the only exception. Denial clears local data and closes an active Experience. The `0.5` namespace starts at `pending`; `0.4` state is not migrated.
 
-## Deferred and events
+## Deployless Experiences
+
+Continue sending the events already integrated in the application. Campaigns select panel-defined events; there is no campaign key, manifest key, client allowlist, Experience init block, renderer mode, or manual presentation API.
 
 ```dart
-final deferred = await WtsSdk.getDeferredDeepLink(); // Android only in V1
-
 await WtsSdk.track(
   'purchase_completed',
-  properties: {'plan': 'pro', 'trial': false},
+  properties: {'plan': 'pro'},
   revenue: WtsRevenue(amount: '49.90', currency: 'TRY'),
 );
-await WtsSdk.flush(); // optional
+await WtsSdk.screen('checkout', properties: {'item_count': 3});
 ```
 
-iOS returns `null` for deferred resolution. The SDK does not navigate automatically and does not use IDFA, GAID, pasteboard attribution, or fingerprinting. Event keys/properties must be registered in the dashboard.
+The exact-pinned native cores verify the root-signed online keyset and source-bound manifest, refresh foreground config within 60 seconds, queue matching campaigns by priority, and render native modal or bottom-sheet Experiences automatically. Expired offline config fails closed.
 
-## Screens and Experiences
-
-Screen views are built-in and do not require a custom-event definition:
+Advanced internal-route and custom-callback actions can install an optional synchronous handler:
 
 ```dart
-await WtsSdk.screen(
-  'checkout',
-  properties: {
-    'cart_total': 749.90,
-    'currency': 'TRY',
-    'item_count': 3,
-  },
-);
-```
-
-Experiences is disabled by default. Configure it explicitly before calling a
-separate experience-consent API:
-
-```dart
-await WtsSdk.configure(
-  appKey: 'YOUR_PUBLIC_APP_KEY',
-  experiences: const WtsExperienceOptions(
-    enabled: true,
-    renderMode: WtsExperienceRenderMode.automatic,
-    allowedInternalRoutes: {'/checkout', '/account'},
-    allowedCallbackKeys: {'apply_offer'},
-    allowedDeepLinkHosts: {'go.example.com'},
-    allowedDeepLinkSchemes: {'example'},
-    allowedWebOrigins: {'https://www.example.com'},
-    manifestVerificationKeys: {
-      'experience-key-2026-07': 'BASE64_SPKI_DER_ED25519_PUBLIC_KEY',
-    },
-  ),
-);
-
-await WtsSdk.setExperienceConsent(WtsExperienceConsent.contextual);
-```
-
-Use `personalized` only after profile consent. `pending` performs no
-Experience request and `denied` clears local Experience state. Rendering,
-decision networking, persistent interaction retry and visibility-qualified
-impressions remain in the official native cores; Flutter does not duplicate
-the protocol. Retrieve the public key ring from the authenticated workspace
-API, `GET /api/v1/organizations/:organizationId/experiences/manifest-verification-keys`,
-and pin the returned `kid` → base64 SPKI DER values in your app configuration.
-Never derive these values from, or place, server signing secrets in a client.
-The native core ignores the unsigned outer manifest and verifies its signed
-payload before it is parsed.
-
-`automatic` rendering stays in the native core. For `manual`, replace the
-configuration above with `renderMode: WtsExperienceRenderMode.manual` before
-registering a handler. The SDK then emits
-typed renderable content and one opaque SDK-issued presentation handle only
-when a candidate is available. Delivery identifiers never enter public
-Experience payloads; the SDK keeps the correlation required for manual
-lifecycle acknowledgements inside the opaque handle. The host owns UI
-presentation and must acknowledge the actual lifecycle:
-
-```dart
-final unsubscribe = WtsSdk.onExperienceAvailable((presentation) async {
-  final render = await WtsSdk.acknowledgeExperienceRender(presentation.handle);
-  if (!render.accepted) return;
-
-  final result = await showYourExperienceUi(presentation.experience);
-  if (result.wasVisibleForOneSecond) {
-    await WtsSdk.acknowledgeExperienceImpression(presentation.handle);
+final unsubscribe = WtsSdk.onExperienceAction((experience, action) {
+  if (action.type == 'OPEN_INTERNAL_ROUTE' && action.target != null) {
+    router.open(action.target!);
+    return true;
   }
-  if (result.actionId != null) {
-    await WtsSdk.reportExperienceAction(presentation.handle, result.actionId!);
-  } else {
-    await WtsSdk.dismissExperience(presentation.handle);
-  }
+  return false;
 });
 ```
 
-Use `failExperiencePresentation(handle, failureCode)` when the manual renderer
-cannot present the candidate. Do not persist or reconstruct presentation
-handles. `presentNextExperience()` and `dismissCurrentExperience()` are for
-automatic rendering; manual mode never invokes native presentation or emits a
-second availability callback.
+Return `true` only after handling the action. Missing, throwing, or `false` handlers report `unhandled` and keep the Experience open. Call `dismissCurrentExperience()` for the emergency host-side close control and `getExperienceDiagnostics()` for support diagnostics.
 
-For a dashboard test device, copy
-`(await WtsSdk.getExperienceDiagnostics()).testDeviceToken` into the dashboard
-test panel for the matching Mobile App. The random source-scoped token contains
-no install, user, or profile identifier, and test traffic is excluded from
-customer analytics and usage.
-
-## SDK Test & Validate
-
-SDK Test & Validate is a dashboard-issued, short-lived validation session. It
-uses an isolated bounded retry queue; probes never create production events,
-identities, attribution, or Experience interactions. Do not hardcode, log, or
-persist its pairing URL or token outside the SDK.
-
-The dashboard QR code uses this canonical form:
-
-```text
-https://<mobile-app-host>/_wts/test/pair?pairing=<dashboard-issued-token>
-```
-
-Recognize that route before your normal deep-link path. Join the test session
-first, then return without calling `handle` for the pairing URL:
+## Deep links and identity
 
 ```dart
-Future<void> onIncomingUrl(Uri uri) async {
-  if (uri.scheme == 'https' && uri.path == '/_wts/test/pair') {
-    final joined = await WtsSdk.joinTestSession(uri.toString());
-    showSdkTestChecks(joined.checks);
-    return;
-  }
+final link = await WtsSdk.handle(incomingUri);
+if (allowedRoutes.contains(link.path)) router.open(link.path);
 
-  // Normal production behavior stays unchanged.
-  final link = await WtsSdk.handle(uri);
-  if (allowedRoutes.contains(link.path)) {
-    router.go(link.path, extra: link.parameters);
-  }
-}
+await WtsSdk.identify('customer_1842', attributes: {'plan': 'enterprise'});
 ```
 
-Use the dashboard-selected plan and inspect its isolated status without
-creating analytics:
+Before grant, `handle` performs functional resolution without creating install identity or attribution. Normal attribution and deferred resolution start after grant. Once `identify` is accepted, Experience decisions automatically switch from contextual to personalized mode.
 
-```dart
-final diagnostics = await WtsSdk.getTestSessionDiagnostics();
-final probes = await WtsSdk.runTestSessionProbes();
+## SDK Test Session V2
 
-// A ready decision is a test-only, manual preview. It is not delivered to the
-// normal Experiences renderer.
-if (probes.experienceDecision?.outcome == 'ready') {
-  await presentTestExperiencePreview(probes.experienceDecision!);
-  await WtsSdk.reportTestSessionExperienceInteraction('impression');
-}
-```
+After grant, route the dashboard pairing URL through `joinTestSession` before normal `handle`, then call `runTestSessionProbes()`. Test Experiences use the native automatic renderer in an isolated queue and never enter the production queue.
 
-Report `'action'` only after the corresponding real manual test action. It is
-accepted only after the isolated decision is ready; production Experience
-lifecycle signals are never copied into this transport. Use
-`probeTestSessionUrl(uri)` for an event-free resolver check and
-`leaveTestSession()` when the operator finishes. Expiry also clears the
-session.
-
-## Consent-aware identity
-
-Profile identity is disabled until the host application provides its own consent decision. Anonymous link handling and analytics keep their existing behavior. Setting consent to `false` queues a server-side profile binding reset through the native core.
-
-```dart
-await WtsSdk.setProfileConsent(true);
-
-await WtsSdk.identify(
-  'customer_1842',
-  attributes: {
-    'email': 'user@example.com',
-    'plan': 'enterprise',
-    'country': 'TR',
-    'subscribed': true,
-  },
-);
-
-await WtsSdk.updateUser(
-  const WtsUserUpdate(
-    set: {'plan': 'business'},
-    setOnce: {'signup_channel': 'partner'},
-    unset: ['temporary_segment'],
-    increment: {'lifetime_orders': 1},
-  ),
-);
-
-await WtsSdk.setReportedAttribution(
-  const WtsReportedAttribution(
-    source: 'newsletter',
-    medium: 'email',
-    campaign: 'summer_2026',
-    externalRef: 'mailing-482',
-  ),
-);
-
-// On logout: removes the profile binding and starts a fresh anonymous/session identity.
-await WtsSdk.resetIdentity();
-```
-
-Use an opaque, stable internal customer ID as `externalUserId`; it is case-sensitive and is not trimmed or normalized. Send email, phone, and name as attributes. `resetIdentity()` preserves the native install UUID used by the underlying mobile SDK.
-
-See the runnable `example`, [security policy](SECURITY.md), and [support policy](SUPPORT.md). Full documentation: https://wts.is/en/resources/docs/sdk-flutter
-
-Native failures are exposed as `WtsSdkException` with stable codes such as
-`TIMEOUT`, `NO_MATCH`, and `PROFILE_CONSENT_REQUIRED`.
+See the [example](example), [security policy](SECURITY.md), and [support policy](SUPPORT.md). Full documentation: https://wts.is/en/resources/docs/sdk-flutter
