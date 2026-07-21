@@ -72,8 +72,8 @@ class WtsDeepLinkData {
   });
   String path;
   List<WtsParameterData> parameters;
-  String linkId;
-  String attributionId;
+  String? linkId;
+  String? attributionId;
   bool isDeferred;
 }
 
@@ -88,32 +88,10 @@ class WtsConfigurationData {
     required this.appKey,
     this.apiBaseUrl,
     this.collectorBaseUrl,
-    required this.experiencesEnabled,
-    required this.experienceRenderMode,
-    required this.allowedInternalRoutes,
-    required this.allowedCallbackKeys,
-    required this.allowedDeepLinkHosts,
-    required this.allowedDeepLinkSchemes,
-    required this.allowedWebOrigins,
-    required this.manifestVerificationKeys,
   });
   String appKey;
   String? apiBaseUrl;
   String? collectorBaseUrl;
-  bool experiencesEnabled;
-  String experienceRenderMode;
-  List<String> allowedInternalRoutes;
-  List<String> allowedCallbackKeys;
-  List<String> allowedDeepLinkHosts;
-  List<String> allowedDeepLinkSchemes;
-  List<String> allowedWebOrigins;
-  List<WtsManifestVerificationKeyData> manifestVerificationKeys;
-}
-
-class WtsManifestVerificationKeyData {
-  WtsManifestVerificationKeyData({required this.kid, required this.value});
-  String kid;
-  String value;
 }
 
 class WtsExperienceDiagnosticsData {
@@ -188,31 +166,6 @@ class WtsExperienceData {
   double delaySeconds;
   double? autoCloseSeconds;
   String? assetUrl;
-}
-
-class WtsExperiencePresentationHandleData {
-  WtsExperiencePresentationHandleData({required this.exposureId});
-  String exposureId;
-}
-
-class WtsExperienceManualPresentationData {
-  WtsExperienceManualPresentationData({
-    required this.experience,
-    required this.handle,
-  });
-  WtsExperienceData experience;
-  WtsExperiencePresentationHandleData handle;
-}
-
-class WtsExperienceLifecycleOutcomeData {
-  WtsExperienceLifecycleOutcomeData({
-    required this.accepted,
-    required this.idempotent,
-    this.code,
-  });
-  bool accepted;
-  bool idempotent;
-  String? code;
 }
 
 class WtsTestSessionCheckData {
@@ -317,9 +270,7 @@ class WtsTestSessionProbeRunData {
 
 @FlutterApi()
 abstract class WtsFlutterApi {
-  void onExperienceAvailable(WtsExperienceManualPresentationData presentation);
-
-  void onExperienceAction(
+  bool onExperienceAction(
     WtsExperienceData experience,
     WtsExperienceActionData action,
   );
@@ -337,7 +288,10 @@ abstract class WtsHostApi {
   WtsDeepLinkData? getDeferredDeepLink();
 
   @async
-  void setProfileConsent(bool granted);
+  void setConsent(String consent);
+
+  @async
+  String getConsentState();
 
   @async
   void identify(String externalUserId, List<WtsParameterData> attributes);
@@ -363,11 +317,6 @@ abstract class WtsHostApi {
   void screen(String name, List<WtsParameterData> properties);
 
   @async
-  String setExperienceConsent(String consent);
-
-  @async
-  bool presentNextExperience();
-
   @async
   bool dismissCurrentExperience();
 
@@ -375,28 +324,6 @@ abstract class WtsHostApi {
   WtsExperienceDiagnosticsData getExperienceDiagnostics();
 
   @async
-  WtsExperienceLifecycleOutcomeData acknowledgeExperienceRender(
-    WtsExperiencePresentationHandleData handle,
-  );
-
-  @async
-  WtsExperienceLifecycleOutcomeData acknowledgeExperienceImpression(
-    WtsExperiencePresentationHandleData handle,
-  );
-
-  @async
-  WtsExperienceLifecycleOutcomeData reportExperienceAction(
-    WtsExperiencePresentationHandleData handle,
-    String actionId,
-  );
-
-  @async
-  WtsExperienceLifecycleOutcomeData dismissExperience(
-    WtsExperiencePresentationHandleData handle,
-    String reason,
-    String? failureCode,
-  );
-
   @async
   WtsTestSessionJoinData joinTestSession(String pairing);
 
@@ -411,9 +338,6 @@ abstract class WtsHostApi {
 
   @async
   WtsTestSessionProbeRunData runTestSessionProbes();
-
-  @async
-  bool reportTestSessionExperienceInteraction(String interaction);
 
   @async
   void flush();

@@ -2,25 +2,17 @@ package co.wetus.sdk.flutter
 
 import android.content.Context
 import android.net.Uri
+import co.wetus.sdk.WtsConsentState
 import co.wetus.sdk.WtsDeepLink
-import co.wetus.sdk.WtsExperienceConsent
 import co.wetus.sdk.WtsExperience
 import co.wetus.sdk.WtsExperienceAction
-import co.wetus.sdk.WtsExperienceDismissReason
-import co.wetus.sdk.WtsExperienceLifecycleOutcome
-import co.wetus.sdk.WtsExperienceManualPresentation
-import co.wetus.sdk.WtsExperienceOptions
-import co.wetus.sdk.WtsExperiencePresentationHandle
-import co.wetus.sdk.WtsExperienceRenderMode
 import co.wetus.sdk.WtsOptions
 import co.wetus.sdk.WtsRevenue
 import co.wetus.sdk.WtsReportedAttribution
-import co.wetus.sdk.WtsProfileConsent
 import co.wetus.sdk.WtsSdk
 import co.wetus.sdk.WtsSdkException
 import co.wetus.sdk.WtsSdkFamily
 import co.wetus.sdk.WtsTestSessionExperienceDecision
-import co.wetus.sdk.WtsTestSessionExperienceInteraction
 import co.wetus.sdk.WtsTestSessionPairing
 import co.wetus.sdk.WtsTestSessionProbeLink
 import co.wetus.sdk.WtsTestSessionProbeResult
@@ -34,10 +26,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlin.coroutines.resume
 
 class WtsSdkPlugin : FlutterPlugin, WtsHostApi {
     private lateinit var context: Context
@@ -53,7 +48,6 @@ class WtsSdkPlugin : FlutterPlugin, WtsHostApi {
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         WtsHostApi.setUp(binding.binaryMessenger, null)
         runCatching {
-            WtsSdk.shared().onExperienceAvailable(null)
             WtsSdk.shared().onExperienceAction(null)
         }
         flutterApi = null
@@ -69,36 +63,26 @@ class WtsSdkPlugin : FlutterPlugin, WtsHostApi {
                     apiBaseUrl = configuration.apiBaseUrl ?: "https://api.wts.is/api/v1",
                     collectorBaseUrl = configuration.collectorBaseUrl
                         ?: "https://collect.wts.is",
-                    experiences = WtsExperienceOptions(
-                        enabled = configuration.experiencesEnabled,
-                        renderMode = if (configuration.experienceRenderMode == "manual") {
-                            WtsExperienceRenderMode.MANUAL
-                        } else {
-                            WtsExperienceRenderMode.AUTOMATIC
-                        },
-                        allowedInternalRoutes = configuration.allowedInternalRoutes.toSet(),
-                        allowedCallbackKeys = configuration.allowedCallbackKeys.toSet(),
-                        allowedDeepLinkHosts = configuration.allowedDeepLinkHosts.toSet(),
-                        allowedDeepLinkSchemes = configuration.allowedDeepLinkSchemes.toSet(),
-                        allowedWebOrigins = configuration.allowedWebOrigins.toSet(),
-                        manifestVerificationKeys = configuration.manifestVerificationKeys
-                            .associate { it.kid to it.value },
-                    ),
                 ),
             )
-            sdk.onExperienceAvailable { presentation ->
-                scope.launch {
-                    flutterApi?.onExperienceAvailable(presentation.toData()) {}
-                }
-            }
             sdk.onExperienceAction { experience, action ->
-                scope.launch {
-                    flutterApi?.onExperienceAction(
+                withContext(Dispatchers.Main.immediate) {
+                    suspendCancellableCoroutine { continuation ->
+                        val api = flutterApi
+                        if (api == null) {
+                            continuation.resume(false)
+                            return@suspendCancellableCoroutine
+                        }
+                        api.onExperienceAction(
                         experience.toData(),
                         action.toData(),
-                    ) {}
+                        ) { result ->
+                            if (continuation.isActive) {
+                                continuation.resume(result.getOrDefault(false))
+                            }
+                        }
+                    }
                 }
-                false
             }
         }.map { Unit }.forFlutter())
     }
@@ -111,12 +95,12 @@ class WtsSdkPlugin : FlutterPlugin, WtsHostApi {
         WtsSdk.shared().getDeferredDeepLink()?.toData()
     }
 
-    override fun setProfileConsent(granted: Boolean, callback: (Result<Unit>) -> Unit) {
-        callback(runCatching {
-            WtsSdk.shared().setProfileConsent(
-                if (granted) WtsProfileConsent.GRANTED else WtsProfileConsent.DENIED,
-            )
-        }.forFlutter())
+    override fun setConsent(consent: String, callback: (Result<Unit>) -> Unit) = launch(callback) {
+        WtsSdk.shared().setConsent(WtsConsentState.valueOf(consent.uppercase()))
+    }
+
+    override fun getConsentState(callback: (Result<String>) -> Unit) {
+        callback(runCatching { WtsSdk.shared().getConsentState().name.lowercase() }.forFlutter())
     }
 
     override fun identify(
@@ -188,19 +172,6 @@ class WtsSdkPlugin : FlutterPlugin, WtsHostApi {
         )
     }
 
-    override fun setExperienceConsent(
-        consent: String,
-        callback: (Result<String>) -> Unit,
-    ) = launch(callback) {
-        WtsSdk.shared().setExperienceConsent(
-            WtsExperienceConsent.valueOf(consent.uppercase()),
-        ).name.lowercase()
-    }
-
-    override fun presentNextExperience(callback: (Result<Boolean>) -> Unit) {
-        callback(runCatching { WtsSdk.shared().presentNextExperience() }.forFlutter())
-    }
-
     override fun dismissCurrentExperience(callback: (Result<Boolean>) -> Unit) {
         callback(runCatching { WtsSdk.shared().dismissCurrentExperience() }.forFlutter())
     }
@@ -222,41 +193,6 @@ class WtsSdkPlugin : FlutterPlugin, WtsHostApi {
                 }
             }.forFlutter(),
         )
-    }
-
-    override fun acknowledgeExperienceRender(
-        handle: WtsExperiencePresentationHandleData,
-        callback: (Result<WtsExperienceLifecycleOutcomeData>) -> Unit,
-    ) = launch(callback) {
-        WtsSdk.shared().acknowledgeExperienceRender(handle.toNative()).toData()
-    }
-
-    override fun acknowledgeExperienceImpression(
-        handle: WtsExperiencePresentationHandleData,
-        callback: (Result<WtsExperienceLifecycleOutcomeData>) -> Unit,
-    ) = launch(callback) {
-        WtsSdk.shared().acknowledgeExperienceImpression(handle.toNative()).toData()
-    }
-
-    override fun reportExperienceAction(
-        handle: WtsExperiencePresentationHandleData,
-        actionId: String,
-        callback: (Result<WtsExperienceLifecycleOutcomeData>) -> Unit,
-    ) = launch(callback) {
-        WtsSdk.shared().reportExperienceAction(handle.toNative(), actionId).toData()
-    }
-
-    override fun dismissExperience(
-        handle: WtsExperiencePresentationHandleData,
-        reason: String,
-        failureCode: String?,
-        callback: (Result<WtsExperienceLifecycleOutcomeData>) -> Unit,
-    ) = launch(callback) {
-        WtsSdk.shared().dismissExperience(
-            handle.toNative(),
-            reason.toNative(),
-            failureCode,
-        ).toData()
     }
 
     override fun joinTestSession(
@@ -317,18 +253,6 @@ class WtsSdkPlugin : FlutterPlugin, WtsHostApi {
         callback: (Result<WtsTestSessionProbeRunData>) -> Unit,
     ) = launch(callback) { WtsSdk.shared().runTestSessionProbes().toData() }
 
-    override fun reportTestSessionExperienceInteraction(
-        interaction: String,
-        callback: (Result<Boolean>) -> Unit,
-    ) = launch(callback) {
-        val value = when (interaction) {
-            "impression" -> WtsTestSessionExperienceInteraction.IMPRESSION
-            "action" -> WtsTestSessionExperienceInteraction.ACTION
-            else -> throw IllegalArgumentException("Unsupported test Experience interaction.")
-        }
-        WtsSdk.shared().reportTestSessionExperienceInteraction(value)
-    }
-
     override fun flush(callback: (Result<Unit>) -> Unit) = launch(callback) { WtsSdk.shared().flush() }
 
     private fun <T> launch(callback: (Result<T>) -> Unit, block: suspend () -> T) {
@@ -379,32 +303,6 @@ class WtsSdkPlugin : FlutterPlugin, WtsHostApi {
         autoCloseSeconds = content.autoCloseSeconds,
         assetUrl = assetUrl,
     )
-
-    private fun WtsExperienceManualPresentation.toData() =
-        WtsExperienceManualPresentationData(
-            experience = experience.toData(),
-            handle = handle.toData(),
-        )
-
-    private fun WtsExperiencePresentationHandle.toData() =
-        WtsExperiencePresentationHandleData(exposureId = exposureId)
-
-    private fun WtsExperiencePresentationHandleData.toNative() =
-        WtsExperiencePresentationHandle.fromExposureId(exposureId)
-
-    private fun WtsExperienceLifecycleOutcome.toData() =
-        WtsExperienceLifecycleOutcomeData(
-            accepted = accepted,
-            idempotent = idempotent,
-            code = code,
-        )
-
-    private fun String.toNative(): WtsExperienceDismissReason = when (this) {
-        "dismissed" -> WtsExperienceDismissReason.DISMISSED
-        "autoClosed" -> WtsExperienceDismissReason.AUTO_CLOSED
-        "renderFailed" -> WtsExperienceDismissReason.RENDER_FAILED
-        else -> throw IllegalArgumentException("Unsupported Experience dismissal reason.")
-    }
 
     private fun WtsExperienceAction.toData() = WtsExperienceActionData(
         id = id,

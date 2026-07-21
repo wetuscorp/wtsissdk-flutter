@@ -17,8 +17,9 @@ jobs:
       - name: Verify tag and package
         run: |
           grep -Fq "version: ${GITHUB_REF_NAME}" pubspec.yaml
-          chmod +x scripts/verify-contracts.sh
+          chmod +x scripts/verify-contracts.sh scripts/verify-native-core-pins.sh
           scripts/verify-contracts.sh
+          scripts/verify-native-core-pins.sh
           flutter pub get
           flutter analyze
           flutter test
